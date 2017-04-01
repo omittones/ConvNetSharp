@@ -3,13 +3,14 @@ using System.Linq;
 
 namespace ConvNetSharp.Core.Tests
 {
-    public static class ArrayExt
+    public static class ArrayExtension
     {
-        public static T[] To<T>(this float[] input)
+        public static T[] To<T>(this double[] input)
             where T : struct, IEquatable<T>
         {
             return input
-                .Select(Ops<T>.Cast)
+                .Select(i => Convert.ChangeType(i, typeof(T)))
+                .Cast<T>()
                 .ToArray();
         }
     }

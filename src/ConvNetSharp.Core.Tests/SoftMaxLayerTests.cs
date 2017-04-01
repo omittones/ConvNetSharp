@@ -28,7 +28,7 @@ namespace ConvNetSharp.Core.Tests
             this.layer.Init(1, 1, 4);
             this.input = BuilderInstance<T>.Volume.SameAs(new[]
             {
-                0.1f, 0.1f, 0.1f, 0.1f,
+                0.1, 0.1, 0.1, 0.1,
                 1000, 2000, 3000, 4000,
                 0, 0, 0, 0
             }.To<T>(), new Shape(1, 1, 4, 3));
@@ -44,20 +44,20 @@ namespace ConvNetSharp.Core.Tests
             Assert.AreEqual(3, output.Shape.GetDimension(3));
 
             var values = output.ToArray();
-            Assert<T>.AreEqual(0.25f, values[0]);
-            Assert<T>.AreEqual(0.25f, values[1]);
-            Assert<T>.AreEqual(0.25f, values[2]);
-            Assert<T>.AreEqual(0.25f, values[3]);
+            AssertNumber.AreEqual(0.25, values[0]);
+            AssertNumber.AreEqual(0.25, values[1]);
+            AssertNumber.AreEqual(0.25, values[2]);
+            AssertNumber.AreEqual(0.25, values[3]);
 
-            Assert<T>.AreEqual(0, values[4]);
-            Assert<T>.AreEqual(0, values[5]);
-            Assert<T>.AreEqual(0, values[6]);
-            Assert<T>.AreEqual(1, values[7]);
+            AssertNumber.AreEqual(0, values[4]);
+            AssertNumber.AreEqual(0, values[5]);
+            AssertNumber.AreEqual(0, values[6]);
+            AssertNumber.AreEqual(1, values[7]);
 
-            Assert<T>.AreEqual(0.25f, values[8]);
-            Assert<T>.AreEqual(0.25f, values[9]);
-            Assert<T>.AreEqual(0.25f, values[10]);
-            Assert<T>.AreEqual(0.25f, values[11]);
+            AssertNumber.AreEqual(0.25, values[8]);
+            AssertNumber.AreEqual(0.25, values[9]);
+            AssertNumber.AreEqual(0.25, values[10]);
+            AssertNumber.AreEqual(0.25, values[11]);
         }
 
         [TestMethod]
