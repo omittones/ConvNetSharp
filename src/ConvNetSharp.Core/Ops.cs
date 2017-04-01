@@ -18,7 +18,7 @@ namespace ConvNetSharp.Core
 
         public static readonly Func<T, T> Negate;
 
-        public static readonly Func<int, T> Cast;
+        public static readonly Func<float, T> Cast;
 
         public static readonly T Zero;
 
@@ -42,9 +42,9 @@ namespace ConvNetSharp.Core
             var divBody = Expression.Divide(firstOperand, secondOperand);
             Divide = Expression.Lambda<Func<T, T, T>>(divBody, firstOperand, secondOperand).Compile();
 
-            var intOperand = Expression.Parameter(typeof(int), "x");
+            var intOperand = Expression.Parameter(typeof(float), "x");
             var castBody = Expression.Convert(intOperand, typeof(T));
-            Cast = Expression.Lambda<Func<int, T>>(castBody, intOperand).Compile();
+            Cast = Expression.Lambda<Func<float, T>>(castBody, intOperand).Compile();
 
             //Log exists only as Math.Log(double x) so always to cast to and from double
             var logMethod = typeof(Math).GetRuntimeMethod("Log", new[] {typeof(T)});
