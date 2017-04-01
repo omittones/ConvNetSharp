@@ -42,10 +42,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AssertNumber.cs" />
     <Compile Include="GenericVolumeTests.cs" />
     <Compile Include="ShapeTests.cs" />
-    <Compile Include="SingleVolumeTests.cs" />
-    <Compile Include="DoubleVolumeTests.cs" />
+    <Compile Include="VolumeTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
