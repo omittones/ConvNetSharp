@@ -45,8 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GenericVolumeTests.cs" />
-    <Compile Include="SingleVolumeTests.cs" />
-    <Compile Include="DoubleVolumeTests.cs" />
+    <Compile Include="VolumeTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -57,6 +56,10 @@
     <ProjectReference Include="..\ConvNetSharp.Volume.GPU\ConvNetSharp.Volume.GPU.csproj">
       <Project>{608c97db-721f-4b34-be2d-01a85b762be9}</Project>
       <Name>ConvNetSharp.Volume.GPU</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ConvNetSharp.Volume.Tests\ConvNetSharp.Volume.Tests.csproj">
+      <Project>{45892049-c55f-411b-9e4c-6240ca6cac39}</Project>
+      <Name>ConvNetSharp.Volume.Tests</Name>
     </ProjectReference>
     <ProjectReference Include="..\ConvNetSharp.Volume\ConvNetSharp.Volume.csproj">
       <Project>{e617600f-2895-4ac3-b4e6-d22804fad532}</Project>
