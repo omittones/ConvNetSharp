@@ -22,7 +22,7 @@ namespace ConvNetSharp.Comparison
 
             const int BATCH_SIZE = 1;
             const double LEARN_RATE = 0.05;
-            const double MOMENTUM = 0;
+            const double MOMENTUM = 0.9;
 
             var aNet = CreateOldNet(set.NmInputs, set.NmOutputs);
             var bNet = CreateNewNet(set.NmInputs, set.NmOutputs);

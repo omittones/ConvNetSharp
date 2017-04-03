@@ -142,7 +142,7 @@ namespace ConvNetSharp.Volume
             this.Storage.MapInplace(f, other.Storage);
         }
 
-        private Volume<T> Multiply(T factor)
+        public Volume<T> Multiply(T factor)
         {
             var result = BuilderInstance<T>.Volume.SameAs(this.Storage, this.Shape);
             DoMultiply(result, factor);

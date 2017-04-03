@@ -56,7 +56,8 @@ namespace ConvNetSharp.Core.Layers
 
         public override void Backward(Volume<T> outputGradient)
         {
-            throw new NotImplementedException();
+            T unused;
+            Backward(outputGradient, out unused);
         }
 
         protected override Volume<T> Forward(Volume<T> input, bool isTraining = false)

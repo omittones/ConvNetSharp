@@ -34,9 +34,9 @@ namespace ConvNetSharp.Core.Tests
                         var oldValue = input.Get(x, y, d);
 
                         input.Set(x, y, d, oldValue + epsilon);
-                        var output1 = (Volume<double>)layer.DoForward(input).Clone();
+                        var output1 = layer.DoForward(input).Clone();
                         input.Set(x, y, d, oldValue - epsilon);
-                        var output2 = (Volume<double>)layer.DoForward(input).Clone();
+                        var output2 = layer.DoForward(input).Clone();
 
                         input.Set(x, y, d, oldValue);
 
@@ -84,9 +84,9 @@ namespace ConvNetSharp.Core.Tests
 
                     var oldValue = vol.Get(i);
                     vol.Set(i, oldValue + epsilon);
-                    var output1 = (Volume<double>)layer.DoForward(input).Clone();
+                    var output1 = layer.DoForward(input).Clone();
                     vol.Set(i, oldValue - epsilon);
-                    var output2 = (Volume<double>)layer.DoForward(input).Clone();
+                    var output2 = layer.DoForward(input).Clone();
                     vol.Set(i, oldValue);
 
                     output1 = output1 - output2;
