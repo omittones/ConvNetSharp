@@ -25,7 +25,7 @@ namespace ConvNetSharp.Layers
 
         public override double Backward(double y)
         {
-            var yint = (int)y;
+            var classIndex = (int)y;
 
             // compute and accumulate gradient wrt weights and bias of this layer
             var x = this.InputActivation;
@@ -33,16 +33,39 @@ namespace ConvNetSharp.Layers
 
             for (var i = 0; i < this.OutputDepth; i++)
             {
-                var indicator = i == yint ? 1.0 : 0.0;
+                var indicator = i == classIndex ? 1.0 : 0.0;
                 var mul = -(indicator - this.es[i]);
                 x.SetGradient(i, mul);
             }
 
             // loss is the class negative log likelihood
-            return -Math.Log(this.es[yint]);
+            return -Math.Log(this.es[classIndex]);
         }
 
         public override double Backward(double[] y)
+        {
+            var x = this.InputActivation;
+            x.ZeroGradients();
+
+            var loss = 0.0;
+            for (var i = 0; i < this.OutputDepth; i++)
+            {
+                var grad = -(y[i] - this.es[i]);
+                x.SetGradient(i, grad);
+
+                double v;
+                if (this.es[i] < double.Epsilon)
+                    v = Math.Log(double.Epsilon);
+                else
+                    v = Math.Log(this.es[i]);
+
+                loss += -(this.es[i]*v);
+            }
+
+            return loss;
+        }
+
+        public override void Backward()
         {
             throw new NotImplementedException();
         }
@@ -54,42 +77,33 @@ namespace ConvNetSharp.Layers
             var outputActivation = new Volume(1, 1, this.OutputDepth, 0.0);
 
             // compute max activation
-            var amax = input.Get(0);
+            var maxInput = input.Get(0);
             for (var i = 1; i < this.OutputDepth; i++)
-            {
-                if (input.Get(i) > amax)
-                {
-                    amax = input.Get(i);
-                }
-            }
+                if (input.Get(i) > maxInput)
+                    maxInput = input.Get(i);
 
             // compute exponentials (carefully to not blow up)
-            var es = new double[this.OutputDepth];
-            var esum = 0.0;
+            var outputAct = new double[this.OutputDepth];
+            var outputSum = 0.0;
             for (var i = 0; i < this.OutputDepth; i++)
             {
-                var e = Math.Exp(input.Get(i) - amax);
-                esum += e;
-                es[i] = e;
+                var exp = Math.Exp(input.Get(i) - maxInput);
+                outputSum += exp;
+                outputAct[i] = exp;
             }
 
             // normalize and output to sum to one
             for (var i = 0; i < this.OutputDepth; i++)
             {
-                es[i] /= esum;
-                outputActivation.Set(i, es[i]);
+                outputAct[i] /= outputSum;
+                outputActivation.Set(i, outputAct[i]);
             }
 
-            this.es = es; // save these for backprop
+            this.es = outputAct; // save these for backprop
             this.OutputActivation = outputActivation;
             return this.OutputActivation;
         }
-
-        public override void Backward()
-        {
-            throw new NotImplementedException();
-        }
-
+        
         public override void Init(int inputWidth, int inputHeight, int inputDepth)
         {
             base.Init(inputWidth, inputHeight, inputDepth);
