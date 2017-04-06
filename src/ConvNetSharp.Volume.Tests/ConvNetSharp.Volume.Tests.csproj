@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GenericVolumeTests.cs" />
+    <Compile Include="IntegrationTests.cs" />
     <Compile Include="ShapeTests.cs" />
     <Compile Include="SingleVolumeTests.cs" />
     <Compile Include="DoubleVolumeTests.cs" />
@@ -52,6 +53,10 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ConvNetSharp.Core.Tests\ConvNetSharp.Core.Tests.csproj">
+      <Project>{507ee568-0c1e-451d-851e-4fb2d96b9e5f}</Project>
+      <Name>ConvNetSharp.Core.Tests</Name>
+    </ProjectReference>
     <ProjectReference Include="..\ConvNetSharp.Volume\ConvNetSharp.Volume.csproj">
       <Project>{e617600f-2895-4ac3-b4e6-d22804fad532}</Project>
       <Name>ConvNetSharp.Volume</Name>

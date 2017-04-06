@@ -1,15 +1,24 @@
 ﻿using System;
 using ConvNetSharp.Core.Layers;
-using ConvNetSharp.Core.Layers.Double;
-using ConvNetSharp.Volume;
-using ConvNetSharp.Volume.Double;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ConvNetSharp.Core.Tests
 {
-    public class IntegrationTests<T>
+    public abstract class IntegrationTests<T>
         where T : struct, IEquatable<T>, IFormattable
     {
+        public abstract double Epsilon { get; }
+
+        public virtual void Minimal()
+        {
+            var net = new Net<T>();
+            net.AddLayer(new InputLayer<T>(3, 3, 3));
+            net.AddLayer(new FullyConnLayer<T>(3));
+            net.AddLayer(new SoftmaxLayer<T>(3));
+
+            GradientCheckTools.CheckGradientOnNet(net, epsilon: Epsilon);
+        }
+
         public virtual void FeedForwardRelu1Hidden()
         {
             var net = new Net<T>();
@@ -19,27 +28,7 @@ namespace ConvNetSharp.Core.Tests
             net.AddLayer(new FullyConnLayer<T>(5));
             net.AddLayer(new SoftmaxLayer<T>(5));
 
-            GradientCheckTools.CheckGradientOnNet(net);
-        }
-    }
-
-    [TestClass]
-    public class DoubleIntegrationTests : IntegrationTests<double>
-    {
-        [TestMethod]
-        public override void FeedForwardRelu1Hidden()
-        {
-            base.FeedForwardRelu1Hidden();
-        }
-    }
-
-    [TestClass]
-    public class SingleIntegrationTests : IntegrationTests<double>
-    {
-        [TestMethod]
-        public override void FeedForwardRelu1Hidden()
-        {
-            base.FeedForwardRelu1Hidden();
+            GradientCheckTools.CheckGradientOnNet(net, epsilon: Epsilon);
         }
     }
 }

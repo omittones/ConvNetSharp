@@ -240,7 +240,7 @@ namespace ConvNetSharp.Volume.Double
         public override void DoSoftMaxGradient(Volume<double> outputGradient, Volume<double> inputGradient)
         {
             //gx = y * gy
-            this.Storage.Map((output, outputG) => output * outputG, outputGradient.Storage, inputGradient.Storage);
+            this.Storage.Map((output, outputG) => output*outputG, outputGradient.Storage, inputGradient.Storage);
 
             //sumdx = sum(gx)
             var sum = BuilderInstance.Volume.SameAs(new Shape(1, 1, 1, inputGradient.Shape.GetDimension(3)));
@@ -251,6 +251,7 @@ namespace ConvNetSharp.Volume.Double
             this.DoMultiply(sum, mult);
             inputGradient.MapInplace((inputG, m) => inputG - m, mult);
         }
+
         public override void DoPool(Volume<double> result, int windowWidth, int windowHeight,
             int horizontalPad, int verticalPad, int horizontalStride, int verticalStride)
         {
