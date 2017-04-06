@@ -10,30 +10,34 @@ namespace ConvNetSharp.Core.Tests
 {
     public static class GradientCheckTools
     {
-        public struct Sample
+        public struct Sample<T>
+            where T : struct, IEquatable<T>, IFormattable
         {
-            public Volume<double>[] Inputs;
-            public Volume<double> Outputs;
+            public Volume<T>[] Inputs;
+            public Volume<T> Outputs;
         }
 
-        public static void CheckGradientOnNet(Net<double> net, int nmSamples = 100, double epsilon = 1e-10)
+        public static void CheckGradientOnNet<T>(Net<T> net, int nmSamples = 100, double epsilon = 1e-10)
+            where T : struct, IEquatable<T>, IFormattable
         {
-            var inputLayers = net.Layers.OfType<InputLayer<double>>().ToArray();
-            var lastLayer = net.Layers.OfType<LastLayerBase<double>>().Single();
+            var epsilonT = Ops<T>.Cast(epsilon);
 
-            var samples = new List<Sample>();
+            var inputLayers = net.Layers.OfType<InputLayer<T>>().ToArray();
+            var lastLayer = net.Layers.OfType<LastLayerBase<T>>().Single();
+
+            var samples = new List<Sample<T>>();
             for (var i = 0; i < nmSamples; i++)
             {
-                Sample sample;
+                Sample<T> sample;
                 sample.Inputs =
                     inputLayers.Select(
-                            l => BuilderInstance.Volume.Random(new Shape(l.InputWidth, l.InputHeight, l.InputDepth)))
+                            l => BuilderInstance<T>.Volume.Random(new Shape(l.InputWidth, l.InputHeight, l.InputDepth)))
                         .ToArray();
                 sample.Outputs =
-                    BuilderInstance.Volume.Random(new Shape(lastLayer.OutputWidth, lastLayer.OutputHeight,
+                    BuilderInstance<T>.Volume.Random(new Shape(lastLayer.OutputWidth, lastLayer.OutputHeight,
                         lastLayer.OutputDepth));
 
-                sample.Outputs.MapInplace(v => v*v);
+                sample.Outputs.MapInplace(v => Ops<T>.Multiply(v, v));
                 sample.Outputs = sample.Outputs.SoftMax();
                 samples.Add(sample);
             }
@@ -59,22 +63,31 @@ namespace ConvNetSharp.Core.Tests
                         for (var y = 0; y < parameters.Shape.GetDimension(1); y++)
                             for (var z = 0; z < parameters.Shape.GetDimension(2); z++)
                             {
-                                double minusLoss, plusLoss;
+                                T minusLoss, plusLoss;
 
                                 var calcGradient = calcGradients.Get(x, y, z);
 
                                 var oldValue = parameters.Get(x, y, z);
-                                parameters.Set(x, y, z, value: oldValue - epsilon);
+                                parameters.Set(x, y, z, value: Ops<T>.Subtract(oldValue, epsilonT));
                                 net.Forward(sample.Inputs, false);
                                 lastLayer.Backward(sample.Outputs, out minusLoss);
-                                parameters.Set(x, y, z, value: oldValue + epsilon);
+                                parameters.Set(x, y, z, value: Ops<T>.Add(oldValue, epsilonT));
                                 net.Forward(sample.Inputs, false);
                                 lastLayer.Backward(sample.Outputs, out plusLoss);
                                 parameters.Set(x, y, z, value: oldValue);
 
-                                var numGradient = (plusLoss - minusLoss)/(2.0*epsilon);
+                                var numGradient = Ops<T>.Subtract(plusLoss, minusLoss);
+                                numGradient = Ops<T>.Divide(numGradient, epsilonT);
+                                numGradient = Ops<T>.Divide(numGradient, Ops<T>.Cast(2.0));
 
-                                Assert.AreEqual(numGradient, calcGradient, calcGradient/1000.0);
+                                var diff = Ops<T>.Subtract(numGradient, calcGradient);
+                                var delta = Ops<T>.Divide(calcGradient, Ops<T>.Cast(1000));
+
+                                if (Ops<T>.GreaterThan(Ops<T>.Zero, diff))
+                                    diff = Ops<T>.Negate(diff);
+
+                                if (Ops<T>.GreaterThan(diff, delta))
+                                    Assert.Fail($"Expected {calcGradient} but got {numGradient} (precision:{delta})!");
                             }
                 }
             }
