@@ -29,6 +29,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MnitsDemo.GPU", "Examples\M
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConvNetSharp.Comparison", "src\ConvNetSharp.Comparison\ConvNetSharp.Comparison.csproj", "{D1577013-5F86-48E8-8AF4-AC4E3813ECC0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConvNetSharp.Performance.Tests", "src\ConvNetSharp.Performance.Tests\ConvNetSharp.Performance.Tests.csproj", "{857A7B91-A10B-484D-9164-0850734A4583}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -83,6 +85,10 @@ Global
 		{D1577013-5F86-48E8-8AF4-AC4E3813ECC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D1577013-5F86-48E8-8AF4-AC4E3813ECC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D1577013-5F86-48E8-8AF4-AC4E3813ECC0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{857A7B91-A10B-484D-9164-0850734A4583}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{857A7B91-A10B-484D-9164-0850734A4583}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{857A7B91-A10B-484D-9164-0850734A4583}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{857A7B91-A10B-484D-9164-0850734A4583}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -91,15 +91,5 @@ namespace ConvNetSharp.Volume
         {
             return (T[]) this._storage.Clone();
         }
-
-        public override bool Equals(object obj)
-        {
-            return Equals(obj as VolumeStorage<T>);
-        }
-
-        public override bool Equals(VolumeStorage<T> other)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

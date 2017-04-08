@@ -87,51 +87,7 @@ namespace ConvNetSharp.Volume.GPU.Double
             this.CopiedToHost = false;
         }
 
-        public void CopyToDevice()
-        {
-            if (!this.CopiedToDevice)
-            {
-                // Device 
-                if (!this._allocatedOnDevice)
-                {
-                    this.DeviceBuffer = new CudaDeviceVariable<double>(this.Shape.TotalLength);
-                    this._allocatedOnDevice = true;
-                }
-
-                var res = DriverAPINativeMethods.AsynchronousMemcpy_v2.cuMemcpyHtoDAsync_v2(
-                    this.DeviceBuffer.DevicePointer, this._hostPointer, this.DeviceBuffer.SizeInBytes,
-                    this.Context.DefaultStream.Stream);
-                if (res != CUResult.Success)
-                {
-                    throw new CudaException(res);
-                }
-            }
-
-            this.CopiedToDevice = true;
-            this.CopiedToHost = false;
-        }
-
-        public void CopyToHost()
-        {
-            if (this.CopiedToDevice && !this.CopiedToHost)
-            {
-                var res = DriverAPINativeMethods.AsynchronousMemcpy_v2.cuMemcpyDtoHAsync_v2(
-                    new IntPtr(this.HostBuffer),
-                    this.DeviceBuffer.DevicePointer, this.DeviceBuffer.SizeInBytes, this.Context.DefaultStream.Stream);
-
-                if (res != CUResult.Success)
-                {
-                    throw new CudaException(res);
-                }
-
-                // Synchro
-                this.Context.DefaultStream.Synchronize();
-
-                this.CopiedToHost = true;
-            }
-        }
-
-        public virtual void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
@@ -233,9 +189,76 @@ namespace ConvNetSharp.Volume.GPU.Double
             return array;
         }
 
-        public override bool Equals(VolumeStorage<double> other)
+        public void CopyToDevice()
         {
-            throw new NotImplementedException();
+            if (!this.CopiedToDevice)
+            {
+                // Device 
+                if (!this._allocatedOnDevice)
+                {
+                    this.DeviceBuffer = new CudaDeviceVariable<double>(this.Shape.TotalLength);
+                    this._allocatedOnDevice = true;
+                }
+
+                var res = DriverAPINativeMethods.SynchronousMemcpy_v2.cuMemcpyHtoD_v2(
+                    this.DeviceBuffer.DevicePointer,
+                    this._hostPointer,
+                    this.DeviceBuffer.SizeInBytes);
+
+                if (res != CUResult.Success)
+                    throw new CudaException(res);
+            }
+
+            this.CopiedToDevice = true;
+            this.CopiedToHost = false;
+        }
+
+        public void CopyToHost()
+        {
+            if (this.CopiedToDevice && !this.CopiedToHost)
+            {
+                var res = DriverAPINativeMethods.SynchronousMemcpy_v2.cuMemcpyDtoH_v2(
+                    new IntPtr(this.HostBuffer),
+                    this.DeviceBuffer.DevicePointer,
+                    this.DeviceBuffer.SizeInBytes);
+
+                if (res != CUResult.Success)
+                    throw new CudaException(res);
+
+                this.CopiedToHost = true;
+            }
+        }
+
+        public void CopyFrom(VolumeStorage source)
+        {
+            if (!object.ReferenceEquals(this, source))
+            {
+                if (this.Shape.TotalLength != source.Shape.TotalLength)
+                    throw new ArgumentException($"{nameof(source)} has different length!");
+
+                source.CopyToDevice();
+
+                if (!this._allocatedOnDevice)
+                {
+                    this.DeviceBuffer = new CudaDeviceVariable<double>(this.Shape.TotalLength);
+                    this._allocatedOnDevice = true;
+                }
+
+                var res = DriverAPINativeMethods.SynchronousMemcpy_v2.cuMemcpy(
+                    this.DeviceBuffer.DevicePointer,
+                    source.DeviceBuffer.DevicePointer,
+                    this.Shape.TotalLength*sizeof(double));
+
+                if (res != CUResult.Success)
+                    throw new CudaException(res);
+
+                this.CopiedToDevice = true;
+                this.CopiedToHost = false;
+            }
+            else
+            {
+                this.CopyToDevice();
+            }
         }
     }
 }

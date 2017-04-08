@@ -115,6 +115,8 @@ namespace ConvNetSharp.Volume.GPU.Double
             inputGradientStorage.CopiedToDevice = true;
         }
 
+        
+
         public override void DoAdd(Volume<double> other, Volume<double> result)
         {
             var otherStorage = other.Storage as VolumeStorage;
@@ -130,15 +132,8 @@ namespace ConvNetSharp.Volume.GPU.Double
                 throw new ArgumentException($"{nameof(result)} storage should be VolumeStorage", nameof(result));
             }
 
-            // Copy to device if not already done
-            this._volumeStorage.CopyToDevice();
+            resultStorage.CopyFrom(this._volumeStorage);
             otherStorage.CopyToDevice();
-            resultStorage.CopyToDevice();
-
-            // result = this
-            DriverAPINativeMethods.SynchronousMemcpy_v2.cuMemcpy(resultStorage.DeviceBuffer.DevicePointer,
-                this._volumeStorage.DeviceBuffer.DevicePointer, this.Shape.TotalLength * sizeof(double));
-            resultStorage.CopiedToDevice = true;
 
             // Synchro
             this._context.DefaultStream.Synchronize();

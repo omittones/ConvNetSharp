@@ -78,11 +78,6 @@ namespace ConvNetSharp.Volume.GPU.Single
 
         public void Dispose() => Dispose(true);
 
-        public override bool Equals(VolumeStorage<float> other)
-        {
-            throw new NotImplementedException();
-        }
-
         public override void Clear()
         {
             CopyToDevice();
