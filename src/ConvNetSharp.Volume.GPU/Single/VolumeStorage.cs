@@ -28,7 +28,7 @@ namespace ConvNetSharp.Volume.GPU.Single
             {
                 throw new CudaException(res);
             }
-            this.HostBuffer = (float*) this._hostPointer;
+            this.HostBuffer = (float*)this._hostPointer;
         }
 
         public VolumeStorage(float[] array, Shape shape, GpuContext context) : this(shape, context, array.Length)
@@ -85,12 +85,21 @@ namespace ConvNetSharp.Volume.GPU.Single
 
         public override void Clear()
         {
-            CopyToDevice();
-
-            DriverAPINativeMethods.Memset.cuMemsetD16_v2(this.DeviceBuffer.DevicePointer, 0, this.DeviceBuffer.SizeInBytes);
-
-            this.CopiedToDevice = true;
-            this.CopiedToHost = false;
+            if (this.CopiedToDevice)
+            {
+                var res = DriverAPINativeMethods.Memset.cuMemsetD16_v2(this.DeviceBuffer.DevicePointer, 0, this.DeviceBuffer.Size);
+                if (res != CUResult.Success)
+                {
+                    throw new CudaException(res);
+                }
+            }
+            else
+            {
+                for (var i = 0; i < this.Shape.TotalLength; i++)
+                {
+                    this.HostBuffer[i] = 0.0f;
+                }
+            }
         }
 
         public void CopyToDevice()
@@ -111,10 +120,10 @@ namespace ConvNetSharp.Volume.GPU.Single
                 {
                     throw new CudaException(res);
                 }
-            }
 
-            this.CopiedToDevice = true;
-            this.CopiedToHost = false;
+                this.CopiedToDevice = true;
+                this.CopiedToHost = false;
+            }
         }
 
         public void CopyToHost()
@@ -235,7 +244,7 @@ namespace ConvNetSharp.Volume.GPU.Single
             CopyToHost();
 
             var array = new float[this.Shape.TotalLength];
-            Marshal.Copy(new IntPtr(this.HostBuffer), array, 0, (int) this.Shape.TotalLength);
+            Marshal.Copy(new IntPtr(this.HostBuffer), array, 0, (int)this.Shape.TotalLength);
             return array;
         }
     }
