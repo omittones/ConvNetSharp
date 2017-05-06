@@ -28,12 +28,12 @@ namespace ConvNetSharp.Performance.Tests
             var gpuVolumeBuilder = new Volume.GPU.Double.VolumeBuilder();
             var cpuVolumeBuilder = new Volume.Double.VolumeBuilder();
 
-            //BuilderInstance<double>.Volume = cpuVolumeBuilder;
-            //var testNet = Create(20, 4, 3);
-            //ExecuteNeuralNet("CPU", testNet, 10, 1000, 10);
+            BuilderInstance<double>.Volume = cpuVolumeBuilder;
+            var testNet = Create(20, 4, 3);
+            ExecuteNeuralNet("CPU", testNet, 10, 1000, 10);
 
             BuilderInstance<double>.Volume = gpuVolumeBuilder;
-            var testNet = Create(20, 4, 3);
+            testNet = Create(20, 4, 3);
             ExecuteNeuralNet("GPU", testNet, 10, 1000, 1);
         }
 
