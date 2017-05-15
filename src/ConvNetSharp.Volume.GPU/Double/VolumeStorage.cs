@@ -184,8 +184,7 @@ namespace ConvNetSharp.Volume.GPU.Double
                 if (res != CUResult.Success)
                     throw new CudaException(res);
 
-                this.CopiedToDevice = true;
-                this.CopiedToHost = false;
+                this.Location = DataLocation.Device;
             }
             else
             {
@@ -193,7 +192,7 @@ namespace ConvNetSharp.Volume.GPU.Double
             }
         }
 
-        public virtual void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {

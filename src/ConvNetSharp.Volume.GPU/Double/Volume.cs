@@ -349,6 +349,51 @@ namespace ConvNetSharp.Volume.GPU.Double
             }
         }
 
+        public override void DoMultiply(Volume<double> right, Volume<double> result)
+        {
+            var resultStorage = result.Storage as VolumeStorage;
+            if (resultStorage == null)
+                throw new ArgumentException($"{nameof(result)} storage should be VolumeStorage", nameof(result));
+
+            var rightStorage = result.Storage as VolumeStorage;
+            if (rightStorage == null)
+                throw new ArgumentException($"{nameof(right)} storage should be VolumeStorage", nameof(right));
+
+            if (!this.Shape.Equals(right.Shape))
+                throw new ArgumentException($"this and {nameof(right)} should be of same Shape!");
+
+            if (!this.Shape.Equals(result.Shape))
+                throw new ArgumentException($"this and {nameof(result)} should be of same Shape!");
+
+
+            // Copy to device if not already done
+            this._volumeStorage.CopyToDevice();
+            rightStorage.CopyToDevice();
+            resultStorage.CopyToDevice();
+
+            // result = this
+            DriverAPINativeMethods.SynchronousMemcpy_v2.cuMemcpy(
+                resultStorage.DeviceBuffer.DevicePointer,
+                this._volumeStorage.DeviceBuffer.DevicePointer,
+                this.Shape.TotalLength*sizeof(double));
+
+            // Synchro
+            this._context.DefaultStream.Synchronize();
+
+            // Add tensors
+            using (var srcDesc = new TensorDescriptor())
+            {
+                var n = this.Shape.GetDimension(3);
+                var c = this.Shape.GetDimension(2);
+                var h = this.Shape.GetDimension(1);
+                var w = this.Shape.GetDimension(0);
+
+                srcDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Double, n, c, h, w);
+
+                throw new NotImplementedException();
+            }
+        }
+
         protected override void DoMultiply(Volume<double> result, double factor)
         {
             var resultStorage = result.Storage as VolumeStorage;
@@ -381,7 +426,7 @@ namespace ConvNetSharp.Volume.GPU.Double
                 this._context.CudnnContext.ScaleTensor(srcDesc, resultStorage.DeviceBuffer, factor);
             }
         }
-
+        
         protected override void DoNegate(Volume<double> result)
         {
             DoMultiply(result, -1.0);

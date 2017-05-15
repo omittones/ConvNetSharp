@@ -266,10 +266,5 @@ namespace ConvNetSharp.Volume.GPU.Single
             Marshal.Copy(new IntPtr(this.HostBuffer), array, 0, (int)this.Shape.TotalLength);
             return array;
         }
-
-        public override bool Equals(VolumeStorage<float> other)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
