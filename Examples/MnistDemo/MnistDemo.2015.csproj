@@ -4,27 +4,25 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{4EF98185-F653-4CD3-AF58-77D036CB6A1F}</ProjectGuid>
+    <ProjectGuid>{C113E052-9096-45A6-82BC-DD82C5001CE5}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>MinimalExample</RootNamespace>
-    <AssemblyName>MinimalExample</AssemblyName>
-    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>MnistDemo</RootNamespace>
+    <AssemblyName>MnistDemo</AssemblyName>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -32,10 +30,12 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Runtime" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -44,20 +44,25 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CircularBuffer.cs" />
+    <Compile Include="DataSet.cs" />
+    <Compile Include="DataSets.cs" />
+    <Compile Include="MnistEntry.cs" />
+    <Compile Include="MnistReader.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\ConvNetSharp.Core\ConvNetSharp.Core.csproj">
-      <Project>{30e2b6b4-5e66-4550-b5df-da443e04df57}</Project>
-      <Name>ConvNetSharp.Core</Name>
+    <ProjectReference Include="..\..\src\ConvNetSharp.Core\ConvNetSharp.Core.2015.csproj">
+      <Project>{3a6864af-30b4-4c0e-b621-3571e3d88b43}</Project>
+      <Name>ConvNetSharp.Core.2015</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\ConvNetSharp.Volume\ConvNetSharp.Volume.csproj">
-      <Project>{e617600f-2895-4ac3-b4e6-d22804fad532}</Project>
-      <Name>ConvNetSharp.Volume</Name>
+    <ProjectReference Include="..\..\src\ConvNetSharp.Volume\ConvNetSharp.Volume.2015.csproj">
+      <Project>{1a285120-f2f0-4a94-ab31-b4e870679c0e}</Project>
+      <Name>ConvNetSharp.Volume.2015</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

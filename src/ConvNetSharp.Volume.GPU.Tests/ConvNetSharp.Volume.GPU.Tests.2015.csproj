@@ -4,17 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{4EF98185-F653-4CD3-AF58-77D036CB6A1F}</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>MinimalExample</RootNamespace>
-    <AssemblyName>MinimalExample</AssemblyName>
-    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <ProjectGuid>{10E7AE67-07A2-4748-A4FA-925F4B21758E}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>ConvNetSharp.Volume.GPU.Tests</RootNamespace>
+    <AssemblyName>ConvNetSharp.Volume.GPU.Tests</AssemblyName>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -22,17 +21,19 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime" />
@@ -44,20 +45,22 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="GenericVolumeTests.cs" />
+    <Compile Include="SingleVolumeTests.cs" />
+    <Compile Include="DoubleVolumeTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\ConvNetSharp.Core\ConvNetSharp.Core.csproj">
-      <Project>{30e2b6b4-5e66-4550-b5df-da443e04df57}</Project>
-      <Name>ConvNetSharp.Core</Name>
+    <ProjectReference Include="..\ConvNetSharp.Volume.GPU\ConvNetSharp.Volume.GPU.2015.csproj">
+      <Project>{bdcc5296-bfd4-411a-8f92-bf30ac85e0ba}</Project>
+      <Name>ConvNetSharp.Volume.GPU.2015</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\ConvNetSharp.Volume\ConvNetSharp.Volume.csproj">
-      <Project>{e617600f-2895-4ac3-b4e6-d22804fad532}</Project>
-      <Name>ConvNetSharp.Volume</Name>
+    <ProjectReference Include="..\ConvNetSharp.Volume\ConvNetSharp.Volume.2015.csproj">
+      <Project>{1a285120-f2f0-4a94-ab31-b4e870679c0e}</Project>
+      <Name>ConvNetSharp.Volume.2015</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -44,6 +44,14 @@ namespace ConvNetSharp.Volume
             this.Storage.Clear();
         }
 
+        public Volume<T> Clone()
+        {
+            var data = new T[this.Shape.TotalLength];
+            Array.Copy(ToArray(), data, data.Length);
+
+            return BuilderInstance<T>.Volume.SameAs(data, this.Shape);
+        }
+
         public Volume<T> Convolve(Volume<T> filters, int pad, int stride)
         {
             var outputDepth = filters.Shape.GetDimension(3);
@@ -110,6 +118,11 @@ namespace ConvNetSharp.Volume
         public abstract void DoTanh(Volume<T> result);
 
         public abstract void DoTanhGradient(Volume<T> input, Volume<T> outputGradient, Volume<T> inputGradient);
+
+        public T Get(int[] coordinates)
+        {
+            return this.Storage.Get(coordinates);
+        }
 
         public T Get(int w, int h, int c, int n)
         {
@@ -233,26 +246,17 @@ namespace ConvNetSharp.Volume
             return inputGradient;
         }
 
-        public Volume<T> SigmoidGradient(Volume<T> input, Volume<T> outputGradient)
-        {
-            var inputGradient = BuilderInstance<T>.Volume.SameAs(this.Storage, this.Shape);
-            DoSigmoidGradient(input, outputGradient, inputGradient);
-            return inputGradient;
-        }
-
-        public Volume<T> TanhGradient(Volume<T> input, Volume<T> outputGradient)
-        {
-            var inputGradient = BuilderInstance<T>.Volume.SameAs(this.Storage, this.Shape);
-            DoTanhGradient(input, outputGradient, inputGradient);
-            return inputGradient;
-        }
-
         public Volume<T> ReShape(params int[] dimensions)
         {
             var shape = new Shape(dimensions);
             shape.GuessUnkownDimension(this.Shape.TotalLength);
 
             return BuilderInstance<T>.Volume.Build(this.Storage, shape);
+        }
+
+        public void Set(int[] coordinates, T value)
+        {
+            this.Storage.Set(coordinates, value);
         }
 
         public void Set(int w, int h, int c, int n, T value)
@@ -280,6 +284,13 @@ namespace ConvNetSharp.Volume
             var result = BuilderInstance<T>.Volume.SameAs(this.Storage, this.Shape);
             DoSigmoid(result);
             return result;
+        }
+
+        public Volume<T> SigmoidGradient(Volume<T> input, Volume<T> outputGradient)
+        {
+            var inputGradient = BuilderInstance<T>.Volume.SameAs(this.Storage, this.Shape);
+            DoSigmoidGradient(input, outputGradient, inputGradient);
+            return inputGradient;
         }
 
         public Volume<T> SoftMax()
@@ -313,6 +324,13 @@ namespace ConvNetSharp.Volume
             var result = BuilderInstance<T>.Volume.SameAs(this.Storage, this.Shape);
             DoTanh(result);
             return result;
+        }
+
+        public Volume<T> TanhGradient(Volume<T> input, Volume<T> outputGradient)
+        {
+            var inputGradient = BuilderInstance<T>.Volume.SameAs(this.Storage, this.Shape);
+            DoTanhGradient(input, outputGradient, inputGradient);
+            return inputGradient;
         }
 
         public T[] ToArray()
@@ -349,14 +367,6 @@ namespace ConvNetSharp.Volume
             }
 
             return sb.ToString();
-        }
-
-        public Volume<T> Clone()
-        {
-            var data = new T[this.Shape.TotalLength];
-            Array.Copy(this.ToArray(), data, data.Length);
-
-            return BuilderInstance<T>.Volume.SameAs(data, this.Shape);
         }
     }
 }

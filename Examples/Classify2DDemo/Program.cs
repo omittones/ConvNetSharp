@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using ConvNetSharp.Core;
 using ConvNetSharp.Core.Layers.Double;
 using ConvNetSharp.Core.Training;
-using ConvNetSharp.Core.Training.Double;
 using ConvNetSharp.Volume;
 using ConvNetSharp.Volume.Double;
 
@@ -53,7 +52,7 @@ namespace Classify2DDemo
             labels.Add(1);
             var n = labels.Count;
 
-            var trainer = new SgdTrainer(net) { LearningRate = 0.01, Momentum = 0.0, L2Decay = 0.001, BatchSize = n };
+            var trainer = new SgdTrainer<double>(net) { LearningRate = 0.01, L2Decay = 0.001, BatchSize = n };
 
             // Training
             do
@@ -77,25 +76,9 @@ namespace Classify2DDemo
         private static void Classify2DUpdate(int n, List<double[]> data, TrainerBase<double> trainer, List<int> labels)
         {
             var avloss = 0.0;
-
-            //var netx = new Volume(new double[2], new Shape(1, 1, 2, 1));
-            //for (var iters = 0; iters < 50; iters++)
-            //{
-            //    for (var ix = 0; ix < n; ix++)
-            //    {
-            //        var hotLabels = new Volume(new double[2], new Shape(1, 1, 2, 1));
-            //        hotLabels.Set(0, 0, labels[ix], 0, 1.0);
-
-            //        netx.Set(0, 0, 0, data[ix][0]);
-            //        netx.Set(0, 0, 1, data[ix][1]);
-
-            //        trainer.Train(netx, hotLabels);
-            //        avloss += trainer.Loss;
-            //    }
-            //}
-
             var netx = new Volume(new double[2 * n], new Shape(1, 1, 2, n));
             var hotLabels = new Volume(new double[2 * n], new Shape(1, 1, 2, n));
+
             for (var ix = 0; ix < n; ix++)
             {
                 hotLabels.Set(0, 0, labels[ix], ix, 1.0);

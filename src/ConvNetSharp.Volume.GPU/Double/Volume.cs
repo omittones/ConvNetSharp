@@ -426,7 +426,7 @@ namespace ConvNetSharp.Volume.GPU.Double
                 this._context.CudnnContext.ScaleTensor(srcDesc, resultStorage.DeviceBuffer, factor);
             }
         }
-        
+
         protected override void DoNegate(Volume<double> result)
         {
             DoMultiply(result, -1.0);
@@ -572,7 +572,7 @@ namespace ConvNetSharp.Volume.GPU.Double
 
         public override void DoSoftMaxGradient(Volume<double> outputGradient, Volume<double> inputGradient)
         {
-            var inputGradientStorage = (VolumeStorage) inputGradient.Storage;
+            var inputGradientStorage = (VolumeStorage)inputGradient.Storage;
             var outputGradientStorage = (VolumeStorage)outputGradient.Storage;
             var outputStorage = this._volumeStorage;
 

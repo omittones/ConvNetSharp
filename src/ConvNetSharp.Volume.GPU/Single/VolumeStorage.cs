@@ -8,8 +8,8 @@ namespace ConvNetSharp.Volume.GPU.Single
 {
     public unsafe class VolumeStorage : VolumeStorage<float>, IDisposable
     {
-        private readonly bool _isOwner;
         private readonly IntPtr _hostPointer;
+        private readonly bool _isOwner;
         private bool _allocatedOnDevice;
 
         public VolumeStorage(Shape shape, GpuContext context, long length = -1) : base(shape)
@@ -87,7 +87,10 @@ namespace ConvNetSharp.Volume.GPU.Single
 
         public GpuContext Context { get; }
 
-        public void Dispose() => Dispose(true);
+        public void Dispose()
+        {
+            Dispose(true);
+        }
 
         public override void Clear()
         {
@@ -201,6 +204,14 @@ namespace ConvNetSharp.Volume.GPU.Single
             Dispose(false);
         }
 
+        public override float Get(int[] coordinates)
+        {
+            CopyToHost();
+
+            var length = coordinates.Length;
+            return Get(coordinates[0], length > 1 ? coordinates[1] : 0, length > 2 ? coordinates[2] : 0, length > 3 ? coordinates[3] : 0);
+        }
+
         public override float Get(int w, int h, int c, int n)
         {
             CopyToHost();
@@ -228,6 +239,14 @@ namespace ConvNetSharp.Volume.GPU.Single
         {
             CopyToHost();
             return this.HostBuffer[i];
+        }
+
+        public override void Set(int[] coordinates, float value)
+        {
+            CopyToHost();
+
+            var length = coordinates.Length;
+            Set(coordinates[0], length > 1 ? coordinates[1] : 0, length > 2 ? coordinates[2] : 0, length > 3 ? coordinates[3] : 0, value);
         }
 
         public override void Set(int w, int h, int c, int n, float value)

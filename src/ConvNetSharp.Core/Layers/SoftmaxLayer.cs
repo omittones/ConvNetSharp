@@ -18,9 +18,15 @@ namespace ConvNetSharp.Core.Layers
 
         public int ClassCount { get; set; }
 
+        /// <summary>
+        /// This computes the cross entropy loss and its gradient (not the softmax gradient)
+        /// </summary>
+        /// <param name="y"></param>
+        /// <param name="loss"></param>
         public override void Backward(Volume<T> y, out T loss)
         {
-            this.OutputActivation.DoSoftMaxGradient(this.OutputActivation - y, this.InputActivationGradients);
+            // input gradient = pi - yi
+            y.DoSubtractFrom(this.OutputActivation, this.InputActivationGradients);
 
             //loss is the class negative log likelihood
             loss = Ops<T>.Zero;
@@ -46,12 +52,8 @@ namespace ConvNetSharp.Core.Layers
 
             loss = Ops<T>.Negate(loss);
 
-#if DEBUG
             if (Ops<T>.IsInvalid(loss))
-            {
-                throw new ApplicationException("Error during calculation!");
-            }
-#endif
+                throw new ArgumentException("Error during calculation!");
         }
 
         public override void Backward(Volume<T> outputGradient)

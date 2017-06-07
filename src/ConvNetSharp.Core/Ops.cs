@@ -16,9 +16,13 @@ namespace ConvNetSharp.Core
 
         public static readonly Func<T, T> Log;
 
+        public static readonly Func<T, T, T> Pow;
+
         public static readonly Func<T, T, bool> GreaterThan;
 
         public static readonly Func<T, T> Negate;
+
+        public static readonly Func<T, T> Sqrt;
 
         public static readonly Func<double, T> Cast;
 
@@ -47,8 +51,8 @@ namespace ConvNetSharp.Core
             var divBody = Expression.Divide(firstOperand, secondOperand);
             Divide = Expression.Lambda<Func<T, T, T>>(divBody, firstOperand, secondOperand).Compile();
             
-            //Log exists only as Math.Log(double x) so always to cast to and from double
-            var logMethod = typeof(Math).GetRuntimeMethod("Log", new[] {typeof(T)});
+            //Log only exists as Math.Log(double x) so always to cast to and from double
+            var logMethod = typeof(Math).GetRuntimeMethod("Log", new[] { typeof(T) });
             Log = Expression.Lambda<Func<T, T>>(
                 Expression.Convert(
                     Expression.Call(null, logMethod, Expression.Convert(firstOperand, typeof(double))),
@@ -62,8 +66,21 @@ namespace ConvNetSharp.Core
 
             Zero = default(T);
 
-            var nanMethod = typeof(T).GetMethod("IsNaN", new[] {typeof(T)});
-            var infMethod = typeof(T).GetMethod("IsInfinity", new[] {typeof(T)});
+            //Pow only exists as Math.Pow(double x, double y) so always to cast to and from double
+            var powMethod = typeof(Math).GetRuntimeMethod("Pow", new[] { typeof(T), typeof(T) });
+            Pow = Expression.Lambda<Func<T, T, T>>(
+                Expression.Convert(Expression.Call(null, powMethod, Expression.Convert(firstOperand, typeof(double)), Expression.Convert(secondOperand, typeof(double))),
+                    typeof(T)), firstOperand, secondOperand).Compile();
+
+            //Sqrt only exists as Math.Sqrt(double d) so always to cast to and from double
+            var sqrtMethod = typeof(Math).GetRuntimeMethod("Sqrt", new[] { typeof(T) });
+            Sqrt = Expression.Lambda<Func<T, T>>(
+                Expression.Convert(
+                    Expression.Call(null, sqrtMethod, Expression.Convert(firstOperand, typeof(double))),
+                    typeof(T)), firstOperand).Compile();
+
+            var nanMethod = typeof(T).GetRuntimeMethod("IsNaN", new[] { typeof(T) });
+            var infMethod = typeof(T).GetRuntimeMethod("IsInfinity", new[] { typeof(T) });
             IsInvalid = Expression.Lambda<Func<T, bool>>(
                 Expression.OrElse(
                     Expression.Call(nanMethod, firstOperand),
@@ -71,16 +88,16 @@ namespace ConvNetSharp.Core
 
             if (typeof(T) == typeof(double))
             {
-                One = (T) (ValueType) 1.0;
-                Epsilon = (T) (ValueType) double.Epsilon;
+                One = (T)(ValueType)1.0;
+                Epsilon = (T)(ValueType)double.Epsilon;
 
                 Expression<Func<T, T>> identity = e => e;
                 Cast = Expression.Lambda<Func<double, T>>(identity.Body, identity.Parameters[0]).Compile();
             }
             else if (typeof(T) == typeof(float))
             {
-                One = (T) (ValueType) 1.0f;
-                Epsilon = (T) (ValueType) float.Epsilon;
+                One = (T)(ValueType)1.0f;
+                Epsilon = (T)(ValueType)float.Epsilon;
 
                 var doubleOperand = Expression.Parameter(typeof(double), "x");
                 var castBody = Expression.Convert(doubleOperand, typeof(T));

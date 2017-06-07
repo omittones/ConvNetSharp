@@ -140,11 +140,11 @@ namespace ConvNetSharp.Volume.Single
                                     {
                                         for (var fd = 0; fd < filterDepth; fd++)
                                         {
-                                            filterGradient.Set(fx, fy, fd, depth,
+                                            filterGradient.Storage.Set(fx, fy, fd, depth,
                                                 filterGradient.Get(fx, fy, fd, depth) +
                                                 Get(ox, oy, fd, n) * chainGradient);
-                                            inputGradient.Set(ox, oy, fd, n,
-                                                inputGradient.Get(ox, oy, fd, n) +
+                                            inputGradient.Storage.Set(ox, oy, fd, n,
+                                                inputGradient.Storage.Get(ox, oy, fd, n) +
                                                 filters.Get(fx, fy, fd, depth) * chainGradient);
                                         }
                                     }
@@ -171,92 +171,8 @@ namespace ConvNetSharp.Volume.Single
             DoMultiply(volume, -1.0f);
         }
 
-        public override void DoRelu(Volume<float> volume)
-        {
-            this.Storage.Map(x => x <= 0 ? 0 : x, volume.Storage);
-        }
-
-        public override void DoReluGradient(Volume<float> input, Volume<float> output, Volume<float> outputGradient)
-        {
-            this.Storage.Map((x, y) => x > 0 ? y : 0, output.Storage, outputGradient.Storage);
-        }
-
-        public override void DoSoftMax(Volume<float> result)
-        {
-            var batchSize = this.Shape.GetDimension(3);
-
-            var outputWidth = this.Shape.GetDimension(0);
-            var outputHeight = this.Shape.GetDimension(1);
-            var outputDepth = this.Shape.GetDimension(2);
-
-            for (var n = 0; n < batchSize; n++)
-            {
-                // compute max activation
-                var amax = float.MinValue;
-                for (var depth = 0; depth < outputDepth; depth++)
-                {
-                    for (var ay = 0; ay < outputHeight; ay++)
-                    {
-                        for (var ax = 0; ax < outputWidth; ax++)
-                        {
-                            var v = Get(ax, ay, depth, n);
-                            if (v > amax)
-                            {
-                                amax = v;
-                            }
-                        }
-                    }
-                }
-
-                // compute exponentials (carefully to not blow up)
-                var es = new float[outputDepth * outputHeight * outputWidth];
-                var esum = 0.0f;
-
-                for (var depth = 0; depth < outputDepth; depth++)
-                {
-                    for (var ay = 0; ay < outputHeight; ay++)
-                    {
-                        for (var ax = 0; ax < outputWidth; ax++)
-                        {
-                            var e = (float)Math.Exp(Get(ax, ay, depth, n) - amax);
-                            esum += e;
-                            es[ax + ay * outputWidth + depth * outputWidth * outputHeight] = e;
-                        }
-                    }
-                }
-
-                // normalize and output to sum to one
-                for (var depth = 0; depth < outputDepth; depth++)
-                {
-                    for (var ay = 0; ay < outputHeight; ay++)
-                    {
-                        for (var ax = 0; ax < outputWidth; ax++)
-                        {
-                            es[ax + ay * outputWidth + depth * outputWidth * outputHeight] /= esum;
-                            result.Storage.Set(ax, ay, depth, n, es[ax + ay * outputWidth + depth * outputWidth * outputHeight]);
-                        }
-                    }
-                }
-            }
-        }
-
-        public override void DoSoftMaxGradient(Volume<float> outputGradient, Volume<float> inputGradient)
-        {
-            //gx = y * gy
-            this.Storage.Map((output, outputG) => output * outputG, outputGradient.Storage, inputGradient.Storage);
-
-            //sumdx = sum(gx)
-            var sum = BuilderInstance.Volume.SameAs(new Shape(1, 1, 1, inputGradient.Shape.GetDimension(3)));
-            inputGradient.Storage.Aggregate((a, b) => a + b, 3, sum.Storage);
-
-            //gx -= y * sumdx
-            var mult = BuilderInstance.Volume.SameAs(inputGradient.Shape);
-            this.DoMultiply(sum, mult);
-            inputGradient.MapInplace((inputG, m) => inputG - m, mult);
-        }
-
         public override void DoPool(Volume<float> result, int windowWidth, int windowHeight,
-                   int horizontalPad, int verticalPad, int horizontalStride, int verticalStride)
+            int horizontalPad, int verticalPad, int horizontalStride, int verticalStride)
         {
             var inputWidth = this.Shape.GetDimension(0);
             var inputHeight = this.Shape.GetDimension(1);
@@ -306,8 +222,8 @@ namespace ConvNetSharp.Volume.Single
         }
 
         public override void DoPoolGradient(Volume<float> input, Volume<float> outputGradient,
-                    Volume<float> inputGradient, int windowWidth, int windowHeight,
-                    int horizontalPad, int verticalPad, int horizontalStride, int verticalStride)
+            Volume<float> inputGradient, int windowWidth, int windowHeight,
+            int horizontalPad, int verticalPad, int horizontalStride, int verticalStride)
         {
             var inputWidth = input.Shape.GetDimension(0);
             var inputHeight = input.Shape.GetDimension(1);
@@ -360,19 +276,96 @@ namespace ConvNetSharp.Volume.Single
             }
         }
 
-        public override void DoTanh(Volume<float> volume)
+        public override void DoRelu(Volume<float> volume)
         {
-            this.Storage.Map(x => (float)Math.Tanh(x), volume.Storage);
+            this.Storage.Map(x => x <= 0 ? 0 : x, volume.Storage);
+        }
+
+        public override void DoReluGradient(Volume<float> input, Volume<float> output, Volume<float> outputGradient)
+        {
+            this.Storage.Map((x, y) => x > 0 ? y : 0, output.Storage, outputGradient.Storage);
         }
 
         public override void DoSigmoid(Volume<float> volume)
         {
-            this.Storage.Map(x => 1.0f / (1.0f + (float)Math.Exp(-x)), volume.Storage);
+            this.Storage.Map(x => (float)(1.0 / (1.0 + Math.Exp(-x))), volume.Storage);
         }
 
         public override void DoSigmoidGradient(Volume<float> input, Volume<float> outputGradient, Volume<float> inputGradient)
         {
             this.Storage.Map((output, outGradient) => output * (1.0f - output) * outGradient, outputGradient.Storage, inputGradient.Storage);
+        }
+
+        public override void DoSoftMax(Volume<float> result)
+        {
+            var batchSize = this.Shape.GetDimension(3);
+
+            var outputWidth = this.Shape.GetDimension(0);
+            var outputHeight = this.Shape.GetDimension(1);
+            var outputDepth = this.Shape.GetDimension(2);
+
+            for (var n = 0; n < batchSize; n++)
+            {
+                // compute max activation
+                var amax = double.MinValue;
+                for (var depth = 0; depth < outputDepth; depth++)
+                {
+                    for (var ay = 0; ay < outputHeight; ay++)
+                    {
+                        for (var ax = 0; ax < outputWidth; ax++)
+                        {
+                            var v = Get(ax, ay, depth, n);
+                            if (v > amax)
+                            {
+                                amax = v;
+                            }
+                        }
+                    }
+                }
+
+                // compute exponentials (carefully to not blow up)
+                var es = new double[outputDepth * outputHeight * outputWidth];
+                var esum = 0.0;
+
+                for (var depth = 0; depth < outputDepth; depth++)
+                {
+                    for (var ay = 0; ay < outputHeight; ay++)
+                    {
+                        for (var ax = 0; ax < outputWidth; ax++)
+                        {
+                            var e = Math.Exp(Get(ax, ay, depth, n) - amax);
+                            esum += e;
+                            es[ax + ay * outputWidth + depth * outputWidth * outputHeight] = e;
+                        }
+                    }
+                }
+
+                // normalize and output to sum to one
+                for (var depth = 0; depth < outputDepth; depth++)
+                {
+                    for (var ay = 0; ay < outputHeight; ay++)
+                    {
+                        for (var ax = 0; ax < outputWidth; ax++)
+                        {
+                            es[ax + ay * outputWidth + depth * outputWidth * outputHeight] /= esum;
+
+                            result.Storage.Set(ax, ay, depth, n,
+                                (float)es[ax + ay * outputWidth + depth * outputWidth * outputHeight]);
+                        }
+                    }
+                }
+            }
+        }
+
+        public override void DoSoftMaxGradient(Volume<float> outputGradient, Volume<float> inputGradient)
+        {
+            this.Storage.Map((input, outputG) => (outputG - 1) * input + input, outputGradient.Storage,
+                inputGradient.Storage);
+        }
+
+        public override void DoTanh(Volume<float> volume)
+        {
+            this.Storage.Map(x => (float)Math.Tanh(x), volume.Storage);
         }
 
         public override void DoTanhGradient(Volume<float> input, Volume<float> outputGradient, Volume<float> inputGradient)
