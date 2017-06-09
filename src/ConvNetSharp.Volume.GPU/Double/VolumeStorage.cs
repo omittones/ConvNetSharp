@@ -164,14 +164,16 @@ namespace ConvNetSharp.Volume.GPU.Double
             }
         }
 
-        public void CopyFrom(VolumeStorage source)
+        public override void CopyFrom(VolumeStorage<double> source)
         {
-            if (!object.ReferenceEquals(this, source))
-            {
-                if (this.Shape.TotalLength != source.Shape.TotalLength)
-                    throw new ArgumentException($"{nameof(source)} has different length!");
+            var real = source as VolumeStorage;
 
-                source.CopyToDevice();
+            if (!object.ReferenceEquals(this, real))
+            {
+                if (this.Shape.TotalLength != real.Shape.TotalLength)
+                    throw new ArgumentException($"{nameof(real)} has different length!");
+
+                real.CopyToDevice();
 
                 if (!this._allocatedOnDevice)
                 {
@@ -181,7 +183,7 @@ namespace ConvNetSharp.Volume.GPU.Double
 
                 var res = DriverAPINativeMethods.SynchronousMemcpy_v2.cuMemcpy(
                     this.DeviceBuffer.DevicePointer,
-                    source.DeviceBuffer.DevicePointer,
+                    real.DeviceBuffer.DevicePointer,
                     this.Shape.TotalLength*sizeof(double));
 
                 if (res != CUResult.Success)

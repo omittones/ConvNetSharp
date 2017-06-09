@@ -29,12 +29,12 @@ namespace ConvNetSharp.Performance.Tests
             var cpuVolumeBuilder = new Volume.Double.VolumeBuilder();
 
             BuilderInstance<double>.Volume = cpuVolumeBuilder;
-            var testNet = Create(20, 4, 3);
-            ExecuteNeuralNet("CPU", testNet, 10, 1000, 10);
+            var testNet = Create(20, 4, 4);
+            ExecuteNeuralNet("CPU", testNet, 100, 1000, 10);
 
             BuilderInstance<double>.Volume = gpuVolumeBuilder;
-            testNet = Create(20, 4, 3);
-            ExecuteNeuralNet("GPU", testNet, 10, 1000, 1);
+            testNet = Create(20, 4, 4);
+            ExecuteNeuralNet("GPU", testNet, 100, 1000, 10);
         }
 
         private static TestNet Create(int layerSize, int nmLayers, int inputWHD)
@@ -114,7 +114,11 @@ namespace ConvNetSharp.Performance.Tests
             }
 
             stopWatch.Stop();
-            Console.WriteLine(stopWatch.ElapsedMilliseconds);
+
+            Console.WriteLine("    total: {0:0.000}ms", stopWatch.ElapsedMilliseconds);
+            Console.WriteLine("  forward: {0:0.000}ms", trainer.ForwardTimeMs);
+            Console.WriteLine(" backward: {0:0.000}ms", trainer.BackwardTimeMs);
+            Console.WriteLine("   update: {0:0.000}ms", trainer.UpdateWeightsTimeMs);
         }
     }
 }
