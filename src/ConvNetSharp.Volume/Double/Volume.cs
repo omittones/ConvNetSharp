@@ -239,12 +239,14 @@ namespace ConvNetSharp.Volume.Double
 
         public override void DoSoftMaxGradient(Volume<double> outputGradient, Volume<double> inputGradient)
         {
+            throw new NotImplementedException();
+
             //gx = y * gy
             this.Storage.Map((output, outputG) => output*outputG, outputGradient.Storage, inputGradient.Storage);
 
             //sumdx = sum(gx)
             var sum = BuilderInstance.Volume.SameAs(new Shape(1, 1, 1, inputGradient.Shape.GetDimension(3)));
-            inputGradient.Storage.Aggregate((a, b) => a + b, 3, sum.Storage);
+            //inputGradient.Storage.Aggregate((a, b) => a + b, 3, sum.Storage);
 
             //gx -= y * sumdx
             var mult = BuilderInstance.Volume.SameAs(inputGradient.Shape);

@@ -30,18 +30,6 @@ namespace ConvNetSharp.Volume
         {
         }
 
-        public static Shape From(Shape shape, params int[] hyperDimensions)
-        {
-            var dims = shape._dimensions.Concat(hyperDimensions).ToArray();
-            var newone = new Shape(dims);
-            return newone;
-        }
-
-        public static Shape From(params int[] dimensions)
-        {
-            return new Shape(dimensions);
-        }
-        
         public int DimensionCount => this._dimensions.Count;
 
         public long TotalLength { get; private set; }
@@ -76,6 +64,19 @@ namespace ConvNetSharp.Volume
             }
 
             return true;
+        }
+
+        public static Shape From(params int[] dimensions)
+        {
+            return new Shape(dimensions);
+        }
+
+        public static Shape From(Shape original, params int[] dimensions)
+        {
+            dimensions = original._dimensions
+                .Concat(dimensions)
+                .ToArray();
+            return new Shape(dimensions);
         }
 
         public override bool Equals(object obj)
