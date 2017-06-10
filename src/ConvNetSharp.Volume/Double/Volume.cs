@@ -161,7 +161,7 @@ namespace ConvNetSharp.Volume.Double
             this.Storage.Map(x => x * factor, result.Storage);
         }
 
-        protected override void DoNegate(Volume<double> volume)
+        public override void DoNegate(Volume<double> volume)
         {
             DoMultiply(volume, -1.0);
         }
@@ -380,6 +380,11 @@ namespace ConvNetSharp.Volume.Double
         public override void DoMultiply(Volume<double> right, Volume<double> result)
         {
             this.Storage.MapEx((x, y) => x * y, right.Storage, result.Storage);
+        }
+
+        public override void DoSubtractFrom(Volume<double> other, Volume<double> result)
+        {
+            throw new NotImplementedException();
         }
     }
 }

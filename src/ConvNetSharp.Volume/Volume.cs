@@ -88,7 +88,9 @@ namespace ConvNetSharp.Volume
 
         public abstract void DoMultiply(Volume<T> right, Volume<T> result);
 
-        protected abstract void DoNegate(Volume<T> result);
+        public abstract void DoSubtractFrom(Volume<T> other, Volume<T> result);
+
+        public abstract void DoNegate(Volume<T> result);
 
         public abstract void DoPool(Volume<T> result, int windowWidth, int windowHeight,
             int horizontalPad, int verticalPad, int horizontalStride, int verticalStride);
@@ -108,13 +110,7 @@ namespace ConvNetSharp.Volume
         public abstract void DoSoftMax(Volume<T> result);
 
         public abstract void DoSoftMaxGradient(Volume<T> outputGradient, Volume<T> inputGradient);
-
-        public void DoSubtractFrom(Volume<T> other, Volume<T> result)
-        {
-            DoNegate(result);
-            result.DoAdd(other, result);
-        }
-
+        
         public abstract void DoTanh(Volume<T> result);
 
         public abstract void DoTanhGradient(Volume<T> input, Volume<T> outputGradient, Volume<T> inputGradient);
