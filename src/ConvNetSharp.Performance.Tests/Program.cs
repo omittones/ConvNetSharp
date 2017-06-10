@@ -29,11 +29,11 @@ namespace ConvNetSharp.Performance.Tests
             var cpuVolumeBuilder = new Volume.Double.VolumeBuilder();
 
             BuilderInstance<double>.Volume = cpuVolumeBuilder;
-            var testNet = Create(20, 4, 4);
+            var testNet = Create(50, 4, 5);
             ExecuteNeuralNet("CPU", testNet, 100, 1000, 10);
 
             BuilderInstance<double>.Volume = gpuVolumeBuilder;
-            testNet = Create(20, 4, 4);
+            testNet = Create(50, 4, 5);
             ExecuteNeuralNet("GPU", testNet, 100, 1000, 10);
         }
 
@@ -102,9 +102,9 @@ namespace ConvNetSharp.Performance.Tests
 
             var trainer = new SgdTrainer(net);
             trainer.LearningRate = 0.01;
-            trainer.Momentum = 0;
-            trainer.L1Decay = 0;
-            trainer.L2Decay = 0;
+            trainer.Momentum = 0.5;
+            trainer.L1Decay = 0.01;
+            trainer.L2Decay = 0.01;
             trainer.BatchSize = batchSize;
 
             for (var i = 0; i < iterations; i++)
