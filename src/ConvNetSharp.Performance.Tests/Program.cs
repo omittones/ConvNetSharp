@@ -28,41 +28,42 @@ namespace ConvNetSharp.Performance.Tests
             var gpuVolumeBuilder = new Volume.GPU.Double.VolumeBuilder();
             var cpuVolumeBuilder = new Volume.Double.VolumeBuilder();
 
-            const int nmLayers = 5;
+            const int nmLayers = 3;
             const int layerSize = 30;
-            const int inputWHD = 3;
-            const int nmSets = 12000;
+            const int nmSets = 12900;
             const int nmIterations = 1;
+            var input = Shape.From(24, 1, 1);
+            var output = 2;
 
-            for (var batchSize = 100; batchSize < 12000; batchSize *= 2)
+            for (var batchSize = 10; batchSize < nmSets; batchSize *= 2)
             {
                 Console.WriteLine($"-- {nameof(batchSize)} == {batchSize} ------------------");
 
                 BuilderInstance<double>.Volume = cpuVolumeBuilder;
-                var testNet = Create(layerSize, nmLayers, inputWHD);
+                var testNet = Create(layerSize, nmLayers, input, output);
                 ExecuteNeuralNet("CPU", testNet, batchSize, nmSets, nmIterations);
 
                 BuilderInstance<double>.Volume = gpuVolumeBuilder;
-                testNet = Create(layerSize, nmLayers, inputWHD);
+                testNet = Create(layerSize, nmLayers, input, output);
                 ExecuteNeuralNet("GPU", testNet, batchSize, nmSets, nmIterations);
 
                 Console.WriteLine();
             }
         }
 
-        private static TestNet Create(int layerSize, int nmLayers, int inputWHD)
+        private static TestNet Create(int layerSize, int nmLayers, Shape input, int output)
         {
             var net = new TestNet();
-            net.InputShape = new[] { Shape.From(inputWHD, inputWHD, inputWHD) };
-            net.OutputShape = Shape.From(1, 1, layerSize);
-            net.AddLayer(new InputLayer(inputWHD, inputWHD, inputWHD));
+            net.InputShape = new[] { Shape.From(input) };
+            net.OutputShape = Shape.From(1, 1, output);
+            net.AddLayer(new InputLayer(input.GetDimension(0), input.GetDimension(1), input.GetDimension(2)));
             for (var i = 0; i < nmLayers; i++)
             {
                 net.AddLayer(new FullyConnLayer(layerSize));
-                net.AddLayer(new SigmoidLayer());
+                net.AddLayer(new ReluLayer());
             }
-            net.AddLayer(new FullyConnLayer(layerSize));
-            net.AddLayer(new SoftmaxLayer(layerSize));
+            net.AddLayer(new FullyConnLayer(output));
+            net.AddLayer(new SoftmaxLayer(output));
             return net;
         }
 
