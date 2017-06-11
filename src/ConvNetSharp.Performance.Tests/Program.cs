@@ -28,13 +28,26 @@ namespace ConvNetSharp.Performance.Tests
             var gpuVolumeBuilder = new Volume.GPU.Double.VolumeBuilder();
             var cpuVolumeBuilder = new Volume.Double.VolumeBuilder();
 
-            BuilderInstance<double>.Volume = cpuVolumeBuilder;
-            var testNet = Create(50, 4, 5);
-            ExecuteNeuralNet("CPU", testNet, 100, 1000, 10);
+            const int nmLayers = 5;
+            const int layerSize = 30;
+            const int inputWHD = 3;
+            const int nmSets = 12000;
+            const int nmIterations = 1;
 
-            BuilderInstance<double>.Volume = gpuVolumeBuilder;
-            testNet = Create(50, 4, 5);
-            ExecuteNeuralNet("GPU", testNet, 100, 1000, 10);
+            for (var batchSize = 100; batchSize < 12000; batchSize *= 2)
+            {
+                Console.WriteLine($"-- {nameof(batchSize)} == {batchSize} ------------------");
+
+                BuilderInstance<double>.Volume = cpuVolumeBuilder;
+                var testNet = Create(layerSize, nmLayers, inputWHD);
+                ExecuteNeuralNet("CPU", testNet, batchSize, nmSets, nmIterations);
+
+                BuilderInstance<double>.Volume = gpuVolumeBuilder;
+                testNet = Create(layerSize, nmLayers, inputWHD);
+                ExecuteNeuralNet("GPU", testNet, batchSize, nmSets, nmIterations);
+
+                Console.WriteLine();
+            }
         }
 
         private static TestNet Create(int layerSize, int nmLayers, int inputWHD)
