@@ -18,6 +18,13 @@ namespace ConvNetSharp.Volume
 
         public Shape Shape => this.Storage.Shape;
 
+        public virtual void Dispose()
+        {
+            var disposable = this.Storage as IDisposable;
+            if (disposable != null)
+                disposable.Dispose();
+        }
+
         public Volume<T> Add(Volume<T> other)
         {
             var sameChannels = other.Shape.GetDimension(2) == this.Shape.GetDimension(2);
@@ -360,13 +367,6 @@ namespace ConvNetSharp.Volume
             }
 
             return sb.ToString();
-        }
-
-        public virtual void Dispose()
-        {
-            var disposable = this.Storage as IDisposable;
-            if (disposable != null)
-                disposable.Dispose();
-        }
+        }       
     }
 }
