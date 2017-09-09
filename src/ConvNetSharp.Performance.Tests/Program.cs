@@ -28,14 +28,14 @@ namespace ConvNetSharp.Performance.Tests
             var gpuVolumeBuilder = new Volume.GPU.Double.VolumeBuilder();
             var cpuVolumeBuilder = new Volume.Double.VolumeBuilder();
 
-            const int nmLayers = 3;
+            const int nmLayers = 2;
             const int layerSize = 30;
-            const int nmSets = 12900;
+            const int nmSets = 2000;
             const int nmIterations = 1;
-            var input = Shape.From(24, 1, 1);
-            var output = 2;
+            var input = Shape.From(590, 1, 1);
+            var output = 5;
 
-            for (var batchSize = 10; batchSize < nmSets; batchSize *= 2)
+            for (var batchSize = 10; batchSize < 200; batchSize += 10)
             {
                 Console.WriteLine($"-- {nameof(batchSize)} == {batchSize} ------------------");
 
