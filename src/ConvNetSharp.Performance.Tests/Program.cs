@@ -28,38 +28,36 @@ namespace ConvNetSharp.Performance.Tests
             var gpuVolumeBuilder = new Volume.GPU.Double.VolumeBuilder();
             var cpuVolumeBuilder = new Volume.Double.VolumeBuilder();
 
-            const int nmLayers = 2;
-            const int layerSize = 30;
             const int nmSets = 2000;
             const int nmIterations = 1;
             var input = Shape.From(590, 1, 1);
             var output = 5;
 
-            for (var batchSize = 10; batchSize < 200; batchSize += 10)
+            for (var batchSize = 130; batchSize < 170; batchSize += 5)
             {
                 Console.WriteLine($"-- {nameof(batchSize)} == {batchSize} ------------------");
 
                 BuilderInstance<double>.Volume = cpuVolumeBuilder;
-                var testNet = Create(layerSize, nmLayers, input, output);
+                var testNet = Create(input, output, 30, 30, 30);
                 ExecuteNeuralNet("CPU", testNet, batchSize, nmSets, nmIterations);
 
                 BuilderInstance<double>.Volume = gpuVolumeBuilder;
-                testNet = Create(layerSize, nmLayers, input, output);
+                testNet = Create(input, output, 30, 30, 30);
                 ExecuteNeuralNet("GPU", testNet, batchSize, nmSets, nmIterations);
 
                 Console.WriteLine();
             }
         }
 
-        private static TestNet Create(int layerSize, int nmLayers, Shape input, int output)
+        private static TestNet Create(Shape input, int output, params int[] layerSizes)
         {
             var net = new TestNet();
             net.InputShape = new[] { Shape.From(input) };
             net.OutputShape = Shape.From(1, 1, output);
             net.AddLayer(new InputLayer(input.GetDimension(0), input.GetDimension(1), input.GetDimension(2)));
-            for (var i = 0; i < nmLayers; i++)
+            for (var i = 0; i < layerSizes.Length; i++)
             {
-                net.AddLayer(new FullyConnLayer(layerSize));
+                net.AddLayer(new FullyConnLayer(layerSizes[i]));
                 net.AddLayer(new ReluLayer());
             }
             net.AddLayer(new FullyConnLayer(output));
