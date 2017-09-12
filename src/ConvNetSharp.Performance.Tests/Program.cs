@@ -31,9 +31,9 @@ namespace ConvNetSharp.Performance.Tests
             const int nmSets = 2000;
             const int nmIterations = 1;
             var input = Shape.From(590, 1, 1);
-            var output = 5;
+            var output = 3;
 
-            for (var batchSize = 130; batchSize < 170; batchSize += 5)
+            for (var batchSize = 500; batchSize < 2000; batchSize += 50)
             {
                 Console.WriteLine($"-- {nameof(batchSize)} == {batchSize} ------------------");
 
