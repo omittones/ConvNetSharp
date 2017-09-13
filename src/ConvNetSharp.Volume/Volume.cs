@@ -8,8 +8,12 @@ namespace ConvNetSharp.Volume
     public abstract class Volume<T> : IDisposable
         where T : struct, IEquatable<T>, IFormattable
     {
+        public static int Count;
+
         protected Volume(VolumeStorage<T> storage)
         {
+            Count++;
+
             this.Storage = storage;
         }
 
@@ -97,6 +101,10 @@ namespace ConvNetSharp.Volume
 
         public abstract void DoExp(Volume<T> result);
 
+        public abstract void DoLeakyRelu(Volume<T> result);
+
+        public abstract void DoLeakyReluGradient(Volume<T> input, Volume<T> outputGradient, Volume<T> inputGradient);
+
         public abstract void DoLog(Volume<T> result);
 
         public abstract void DoMax(Volume<T> result);
@@ -126,9 +134,9 @@ namespace ConvNetSharp.Volume
 
         public abstract void DoSigmoidGradient(Volume<T> input, Volume<T> outputGradient, Volume<T> inputGradient);
 
-        public abstract void DoSoftMax(Volume<T> result);
+        public abstract void DoSoftmax(Volume<T> result);
 
-        public abstract void DoSoftMaxGradient(Volume<T> output, Volume<T> outputGradient, Volume<T> inputGradient);
+        public abstract void DoSoftmaxGradient(Volume<T> outputGradient, Volume<T> inputGradient);
 
         public abstract void DoSubtractFrom(Volume<T> other, Volume<T> result);
 
@@ -204,7 +212,7 @@ namespace ConvNetSharp.Volume
 
         public static implicit operator Volume<T>(T[] t)
         {
-            return BuilderInstance<T>.Volume.SameAs(t, new Shape(t.Length));
+            return BuilderInstance<T>.Volume.SameAs(t, new Shape(1, 1, t.Length, 1));
         }
 
         public static implicit operator T(Volume<T> v)
@@ -230,6 +238,20 @@ namespace ConvNetSharp.Volume
         public static Volume<T> operator -(Volume<T> volume)
         {
             return volume.Negate();
+        }
+
+        public Volume<T> LeakyRelu()
+        {
+            var result = BuilderInstance<T>.Volume.SameAs(this.Storage, this.Shape);
+            DoLeakyRelu(result);
+            return result;
+        }
+
+        public Volume<T> LeakyReluGradient(Volume<T> input, Volume<T> outputGradient)
+        {
+            var inputGradient = BuilderInstance<T>.Volume.SameAs(this.Storage, this.Shape);
+            DoLeakyReluGradient(input, outputGradient, inputGradient);
+            return inputGradient;
         }
 
         public Volume<T> Pool(int windowWidth, int windowHeight, int pad, int stride)
@@ -287,12 +309,26 @@ namespace ConvNetSharp.Volume
             return inputGradient;
         }
 
+        public Volume<T> ReShape(Shape shape)
+        {
+            var guessedShape = new Shape(shape);
+            for (int i = 0; i < shape.DimensionCount; i++)
+            {
+                if (shape.GetDimension(i) == Shape.Keep)
+                {
+                    guessedShape.SetDimension(i, this.Shape.GetDimension(i));
+                }
+            }
+            guessedShape.GuessUnkownDimension(this.Shape.TotalLength);
+
+            Volume<T>.Count--;
+
+            return BuilderInstance<T>.Volume.Build(this.Storage, guessedShape);
+        }
+
         public Volume<T> ReShape(params int[] dimensions)
         {
-            var shape = new Shape(dimensions);
-            shape.GuessUnkownDimension(this.Shape.TotalLength);
-
-            return BuilderInstance<T>.Volume.Build(this.Storage, shape);
+            return this.ReShape((Shape)dimensions);
         }
 
         public void Set(int[] coordinates, T value)
@@ -334,17 +370,17 @@ namespace ConvNetSharp.Volume
             return inputGradient;
         }
 
-        public Volume<T> SoftMax()
+        public Volume<T> Softmax()
         {
             var result = BuilderInstance<T>.Volume.SameAs(this.Storage, this.Shape);
-            DoSoftMax(result);
+            DoSoftmax(result);
             return result;
         }
 
-        public Volume<T> SoftMaxGradient(Volume<T>  output, Volume<T> outputGradient)
+        public Volume<T> SoftmaxGradient(Volume<T> outputGradient)
         {
             var inputGradient = BuilderInstance<T>.Volume.SameAs(this.Storage, this.Shape);
-            DoSoftMaxGradient(output, outputGradient, inputGradient);
+            DoSoftmaxGradient(outputGradient, inputGradient);
             return inputGradient;
         }
 

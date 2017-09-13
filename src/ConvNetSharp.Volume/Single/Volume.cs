@@ -20,7 +20,8 @@ namespace ConvNetSharp.Volume.Single
                     this.Storage.Map(x => (float)(1.0 / (1.0 + Math.Exp(-x))), volume.Storage);
                     return;
                 case ActivationType.Relu:
-                    throw new NotImplementedException();
+                    this.DoRelu(volume);
+                    break;
                 case ActivationType.Tanh:
                     this.Storage.Map(x => (float)Math.Tanh(x), volume.Storage);
                     return;
@@ -37,9 +38,12 @@ namespace ConvNetSharp.Volume.Single
                     this.Storage.Map((output, outGradient) => output * (1.0f - output) * outGradient, outputGradient.Storage, result.Storage);
                     return;
                 case ActivationType.Relu:
-                    throw new NotImplementedException();
+                    this.DoReluGradient(input, outputGradient, result);
+                    break;
                 case ActivationType.Tanh:
-                    throw new NotImplementedException();
+                    this.Storage.Map((output, outGradient) => (1.0f - output * output) * outGradient, outputGradient.Storage,
+                        result.Storage);
+                    break;
                 case ActivationType.ClippedRelu:
                     throw new NotImplementedException();
             }
@@ -204,7 +208,17 @@ namespace ConvNetSharp.Volume.Single
 
         public override void DoExp(Volume<float> result)
         {
-            this.Storage.Map(x => (float)Math.Log(x), result.Storage);
+            this.Storage.Map(x => (float)Math.Exp(x), result.Storage);
+        }
+
+        public override void DoLeakyRelu(Volume<float> volume)
+        {
+            this.Storage.Map(x => x <= 0 ? 0.01f * x : x, volume.Storage);
+        }
+
+        public override void DoLeakyReluGradient(Volume<float> input, Volume<float> output, Volume<float> outputGradient)
+        {
+            this.Storage.Map((x, y) => x >= 0 ? y : 0.01f, output.Storage, outputGradient.Storage);
         }
 
         public override void DoLog(Volume<float> result)
@@ -382,6 +396,12 @@ namespace ConvNetSharp.Volume.Single
 
         public override void DoReduce(Volume<float> result, TensorReduceOp op)
         {
+            if (this.Shape.Equals(result.Shape))
+            {
+                result.Storage.CopyFrom(this.Storage);
+                return;
+            }
+
             switch (op)
             {
                 case TensorReduceOp.Add:
@@ -429,7 +449,7 @@ namespace ConvNetSharp.Volume.Single
             this.Storage.Map((output, outGradient) => output * (1.0f - output) * outGradient, outputGradient.Storage, inputGradient.Storage);
         }
 
-        public override void DoSoftMax(Volume<float> result)
+        public override void DoSoftmax(Volume<float> result)
         {
             var batchSize = this.Shape.GetDimension(3);
 
@@ -490,11 +510,11 @@ namespace ConvNetSharp.Volume.Single
             }
         }
 
-        public override void DoSoftMaxGradient(Volume<float> output, Volume<float> outputGradient, Volume<float> inputGradient)
+        public override void DoSoftmaxGradient(Volume<float> outputGradient, Volume<float> inputGradient)
         {
             var batchSize = this.Shape.TotalLength == 1 ? 1 : this.Shape.GetDimension(-1);
 
-            var outputReshape = output.ReShape(-1, batchSize);
+            var outputReshape = this.ReShape(-1, batchSize);
             var outputGradientReshape = outputGradient.ReShape(-1, batchSize);
             var inputGradientReshape = inputGradient.ReShape(-1, batchSize);
 
@@ -542,22 +562,36 @@ namespace ConvNetSharp.Volume.Single
 
         public override void DoSum(Volume<float> result)
         {
-            var batchSize = this.Shape.DimensionCount > 1 ? this.Shape.GetDimension(-1) : 1;
-            var reshape = ReShape(-1, batchSize);
+            var batchsize = this.Shape.GetDimension(3);
+            var channel = this.Shape.GetDimension(2);
+            var height = this.Shape.GetDimension(1);
+            var width = this.Shape.GetDimension(0);
 
-            var n = reshape.Shape.GetDimension(0);
+            var resultWIsOne = result.Shape.GetDimension(0) == 1;
+            var resultHIsOne = result.Shape.GetDimension(1) == 1;
+            var resultCIsOne = result.Shape.GetDimension(2) == 1;
+            var resultNIsOne = result.Shape.GetDimension(3) == 1;
 
-            for (var i = 0; i < batchSize; i++)
+            for (int n = 0; n < batchsize; n++)
             {
-                var sum = 0.0f;
-
-                for (var j = 0; j < n; j++)
+                for (int c = 0; c < channel; c++)
                 {
-                    var d = reshape.Get(j, i);
-                    sum += d;
-                }
+                    for (int h = 0; h < height; h++)
+                    {
+                        for (int w = 0; w < width; w++)
+                        {
+                            var val = this.Get(w, h, c, n);
 
-                result.Set(new[] { i }, sum);
+                            var resultW = resultWIsOne ? 0 : w;
+                            var resultH = resultHIsOne ? 0 : h;
+                            var resultC = resultCIsOne ? 0 : c;
+                            var resultN = resultNIsOne ? 0 : n;
+
+                            var current = result.Get(resultW, resultH, resultC, resultN);
+                            result.Set(resultW, resultH, resultC, resultN, current + val);
+                        }
+                    }
+                }
             }
         }
 

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Reflection;
 using ManagedCuda;
 using ManagedCuda.BasicTypes;
 using ManagedCuda.CudaDNN;
@@ -7,6 +9,7 @@ namespace ConvNetSharp.Volume.GPU.Double
 {
     public class Volume : Volume<double>
     {
+        private static KernelLoader<double> _kernelLoader;
         private readonly GpuContext _context;
         private readonly VolumeStorage _volumeStorage;
 
@@ -14,18 +17,24 @@ namespace ConvNetSharp.Volume.GPU.Double
         {
             this._context = storage.Context;
             this._volumeStorage = this.Storage as VolumeStorage;
+
+            LoadKernels();
         }
 
         public Volume(double[] array, Shape shape) : base(new VolumeStorage(array, shape, GpuContext.Default))
         {
             this._context = GpuContext.Default;
             this._volumeStorage = this.Storage as VolumeStorage;
+
+            LoadKernels();
         }
 
         public Volume(double[] array, Shape shape, GpuContext context) : base(new VolumeStorage(array, shape, context))
         {
             this._context = context;
             this._volumeStorage = this.Storage as VolumeStorage;
+
+            LoadKernels();
         }
 
         private void DoActivation(Volume<double> result, cudnnActivationMode mode)
@@ -356,17 +365,27 @@ namespace ConvNetSharp.Volume.GPU.Double
 
         public override void DoDivide(Volume<double> other, Volume<double> result)
         {
-            throw new NotImplementedException();
+            _kernelLoader.RunKernel("Div", this, other, result);
         }
 
         public override void DoExp(Volume<double> result)
         {
-            throw new NotImplementedException();
+            _kernelLoader.RunKernel("Exp", this, result);
+        }
+
+        public override void DoLeakyRelu(Volume<double> result)
+        {
+            _kernelLoader.RunKernel("LeakyRelu", this, result);
+        }
+
+        public override void DoLeakyReluGradient(Volume<double> input, Volume<double> outputGradient, Volume<double> inputGradient)
+        {
+            _kernelLoader.RunKernel("LeakyReluGradient", this, outputGradient, inputGradient);
         }
 
         public override void DoLog(Volume<double> result)
         {
-            this.Storage.Map(Math.Log, result.Storage);
+            _kernelLoader.RunKernel("Log", this, result);
         }
 
         public override void DoMax(Volume<double> result)
@@ -387,20 +406,10 @@ namespace ConvNetSharp.Volume.GPU.Double
                 throw new ArgumentException($"{nameof(result)} storage should be VolumeStorage", nameof(result));
             }
 
-            if (!this.Shape.Equals(result.Shape))
-            {
-                throw new ArgumentException($"this and {nameof(result)} should be of same Shape!");
-            }
-
             var rightStorage = right.Storage as VolumeStorage;
             if (rightStorage == null)
             {
                 throw new ArgumentException($"{nameof(right)} storage should be VolumeStorage", nameof(right));
-            }
-
-            if (!this.Shape.Equals(right.Shape))
-            {
-                throw new ArgumentException($"this and {nameof(right)} should be of same Shape!");
             }
 
             // Copy to device if not already done
@@ -408,10 +417,19 @@ namespace ConvNetSharp.Volume.GPU.Double
             rightStorage.CopyToDevice();
             resultStorage.CopyToDevice();
 
-            var n = this.Shape.GetDimension(3);
-            var c = this.Shape.GetDimension(2);
-            var h = this.Shape.GetDimension(1);
-            var w = this.Shape.GetDimension(0);
+            var aStorage = this._volumeStorage;
+            var bStorage = rightStorage;
+            if (bStorage.Shape.TotalLength > aStorage.Shape.TotalLength)
+            {
+                aStorage = rightStorage;
+                bStorage = this._volumeStorage;
+            }
+            var bShape = bStorage.Shape;
+
+            var n = aStorage.Shape.GetDimension(3);
+            var c = aStorage.Shape.GetDimension(2);
+            var h = aStorage.Shape.GetDimension(1);
+            var w = aStorage.Shape.GetDimension(0);
 
             // Add tensors
             using (var descA = new TensorDescriptor())
@@ -419,7 +437,8 @@ namespace ConvNetSharp.Volume.GPU.Double
             using (var descC = new TensorDescriptor())
             {
                 descA.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Double, n, c, h, w);
-                descB.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Double, n, c, h, w);
+                descB.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Double, bShape.GetDimension(3), bShape.GetDimension(2), bShape.GetDimension(1),
+                    bShape.GetDimension(0));
                 descC.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Double, n, c, h, w);
 
                 using (var opt = new OpTensorDescriptor(this._context.CudnnContext))
@@ -435,8 +454,8 @@ namespace ConvNetSharp.Volume.GPU.Double
                     var status = CudaDNNNativeMethods.cudnnOpTensor(
                         this._context.CudnnContext.Handle,
                         opt.Desc,
-                        ref one, descA.Desc, this._volumeStorage.DeviceBuffer.DevicePointer,
-                        ref one, descB.Desc, rightStorage.DeviceBuffer.DevicePointer,
+                        ref one, descA.Desc, aStorage.DeviceBuffer.DevicePointer,
+                        ref one, descB.Desc, bStorage.DeviceBuffer.DevicePointer,
                         ref zero, descC.Desc, resultStorage.DeviceBuffer.DevicePointer);
 
                     if (status != cudnnStatus.Success)
@@ -577,6 +596,12 @@ namespace ConvNetSharp.Volume.GPU.Double
 
         private void DoReduce(Volume<double> result, cudnnReduceTensorOp op)
         {
+            if (this.Shape.Equals(result.Shape))
+            {
+                result.Storage.CopyFrom(this.Storage);
+                return;
+            }
+
             var aStorage = this._volumeStorage;
             var cStorage = result.Storage as VolumeStorage;
 
@@ -648,7 +673,7 @@ namespace ConvNetSharp.Volume.GPU.Double
             DoActivationGradient(input, outputGradient, inputGradient, cudnnActivationMode.Sigmoid);
         }
 
-        public override void DoSoftMax(Volume<double> output)
+        public override void DoSoftmax(Volume<double> output)
         {
             var inputStorage = this._volumeStorage;
             var outputStorage = output.Storage as VolumeStorage;
@@ -674,7 +699,7 @@ namespace ConvNetSharp.Volume.GPU.Double
             }
         }
 
-        public override void DoSoftMaxGradient(Volume<double> output, Volume<double> outputGradient, Volume<double> inputGradient)
+        public override void DoSoftmaxGradient(Volume<double> outputGradient, Volume<double> inputGradient)
         {
             var inputGradientStorage = (VolumeStorage)inputGradient.Storage;
             var outputGradientStorage = (VolumeStorage)outputGradient.Storage;
@@ -688,7 +713,6 @@ namespace ConvNetSharp.Volume.GPU.Double
             // Synchro
             this._context.DefaultStream.Synchronize();
 
-            using (var activationDesc = new ActivationDescriptor())
             using (var srcDesc = new TensorDescriptor())
             using (var srcDiffDesc = new TensorDescriptor())
             using (var destDiffDesc = new TensorDescriptor())
@@ -701,7 +725,6 @@ namespace ConvNetSharp.Volume.GPU.Double
                 srcDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Double, n, c, h, w);
                 srcDiffDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Double, n, c, h, w);
                 destDiffDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Double, n, c, h, w);
-                activationDesc.SetActivationDescriptor(cudnnActivationMode.Relu, cudnnNanPropagation.PropagateNan, 0.0);
 
                 this._context.CudnnContext.SoftmaxBackward(cudnnSoftmaxAlgorithm.Accurate, cudnnSoftmaxMode.Channel, 1.0,
                     srcDesc, outputStorage.DeviceBuffer,
@@ -765,6 +788,40 @@ namespace ConvNetSharp.Volume.GPU.Double
             Volume<double> inputGradient)
         {
             DoActivationGradient(input, outputGradient, inputGradient, cudnnActivationMode.Tanh);
+        }
+
+        private void LoadKernels()
+        {
+            if (_kernelLoader == null)
+            {
+                _kernelLoader = new KernelLoader<double>(this._context);
+
+                var assembly = Assembly.GetExecutingAssembly();
+                using (Stream stream = assembly.GetManifestResourceStream("ConvNetSharp.Volume.GPU.Double.Kernels.log.cu"))
+                {
+                    _kernelLoader.LoadKernel("Log", stream);
+                }
+
+                using (Stream stream = assembly.GetManifestResourceStream("ConvNetSharp.Volume.GPU.Double.Kernels.exp.cu"))
+                {
+                    _kernelLoader.LoadKernel("Exp", stream);
+                }
+
+                using (Stream stream = assembly.GetManifestResourceStream("ConvNetSharp.Volume.GPU.Double.Kernels.div.cu"))
+                {
+                    _kernelLoader.LoadKernel("Div", stream);
+                }
+
+                using (Stream stream = assembly.GetManifestResourceStream("ConvNetSharp.Volume.GPU.Double.Kernels.leakyrelu.cu"))
+                {
+                    _kernelLoader.LoadKernel("LeakyRelu", stream);
+                }
+
+                using (Stream stream = assembly.GetManifestResourceStream("ConvNetSharp.Volume.GPU.Double.Kernels.leakyrelu_gradient.cu"))
+                {
+                    _kernelLoader.LoadKernel("LeakyReluGradient", stream);
+                }
+            }
         }
     }
 }

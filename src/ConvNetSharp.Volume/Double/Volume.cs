@@ -20,7 +20,8 @@ namespace ConvNetSharp.Volume.Double
                     this.Storage.Map(x => 1.0 / (1.0 + Math.Exp(-x)), volume.Storage);
                     return;
                 case ActivationType.Relu:
-                    throw new NotImplementedException();
+                    this.DoRelu(volume);
+                    break;
                 case ActivationType.Tanh:
                     this.Storage.Map(Math.Tanh, volume.Storage);
                     break;
@@ -39,7 +40,8 @@ namespace ConvNetSharp.Volume.Double
                         result.Storage);
                     return;
                 case ActivationType.Relu:
-                    throw new NotImplementedException();
+                    this.DoReluGradient(input, outputGradient, result);
+                    break;
                 case ActivationType.Tanh:
                     this.Storage.Map((output, outGradient) => (1.0 - output * output) * outGradient, outputGradient.Storage,
                         result.Storage);
@@ -206,6 +208,16 @@ namespace ConvNetSharp.Volume.Double
         public override void DoExp(Volume<double> result)
         {
             this.Storage.Map(Math.Exp, result.Storage);
+        }
+
+        public override void DoLeakyRelu(Volume<double> volume)
+        {
+            this.Storage.Map(x => x <= 0 ? 0.01 * x : x, volume.Storage);
+        }
+
+        public override void DoLeakyReluGradient(Volume<double> input, Volume<double> output, Volume<double> outputGradient)
+        {
+            this.Storage.Map((x, y) => x >= 0 ? y : 0.01, output.Storage, outputGradient.Storage);
         }
 
         public override void DoLog(Volume<double> result)
@@ -383,6 +395,12 @@ namespace ConvNetSharp.Volume.Double
 
         public override void DoReduce(Volume<double> result, TensorReduceOp op)
         {
+            if (this.Shape.Equals(result.Shape))
+            {
+                result.Storage.CopyFrom(this.Storage);
+                return;
+            }
+
             switch (op)
             {
                 case TensorReduceOp.Add:
@@ -432,7 +450,7 @@ namespace ConvNetSharp.Volume.Double
                 inputGradient.Storage);
         }
 
-        public override void DoSoftMax(Volume<double> result)
+        public override void DoSoftmax(Volume<double> result)
         {
             var batchSize = this.Shape.GetDimension(3);
 
@@ -493,11 +511,11 @@ namespace ConvNetSharp.Volume.Double
             }
         }
 
-        public override void DoSoftMaxGradient(Volume<double> output, Volume<double> outputGradient, Volume<double> inputGradient)
+        public override void DoSoftmaxGradient(Volume<double> outputGradient, Volume<double> inputGradient)
         {
             var batchSize = this.Shape.TotalLength == 1 ? 1 : this.Shape.GetDimension(-1);
 
-            var outputReshape = output.ReShape(-1, batchSize);
+            var outputReshape = this.ReShape(-1, batchSize);
             var outputGradientReshape = outputGradient.ReShape(-1, batchSize);
             var inputGradientReshape = inputGradient.ReShape(-1, batchSize);
 
@@ -545,22 +563,36 @@ namespace ConvNetSharp.Volume.Double
 
         public override void DoSum(Volume<double> result)
         {
-            var batchSize = this.Shape.DimensionCount > 1 ? this.Shape.GetDimension(-1) : 1;
-            var reshape = ReShape(-1, batchSize);
+            var batchsize = this.Shape.GetDimension(3);
+            var channel = this.Shape.GetDimension(2);
+            var height = this.Shape.GetDimension(1);
+            var width = this.Shape.GetDimension(0);
 
-            var n = reshape.Shape.GetDimension(0);
+            var resultWIsOne = result.Shape.GetDimension(0) == 1;
+            var resultHIsOne = result.Shape.GetDimension(1) == 1;
+            var resultCIsOne = result.Shape.GetDimension(2) == 1;
+            var resultNIsOne = result.Shape.GetDimension(3) == 1;
 
-            for (var i = 0; i < batchSize; i++)
+            for (int n = 0; n < batchsize; n++)
             {
-                var sum = 0.0;
-
-                for (var j = 0; j < n; j++)
+                for (int c = 0; c < channel; c++)
                 {
-                    var d = reshape.Get(j, i);
-                    sum += d;
-                }
+                    for (int h = 0; h < height; h++)
+                    {
+                        for (int w = 0; w < width; w++)
+                        {
+                            var val = this.Get(w, h, c, n);
 
-                result.Set(new[] { i }, sum);
+                            var resultW = resultWIsOne ? 0 : w;
+                            var resultH = resultHIsOne ? 0 : h;
+                            var resultC = resultCIsOne ? 0 : c;
+                            var resultN = resultNIsOne ? 0 : n;
+
+                            var current = result.Get(resultW, resultH, resultC, resultN);
+                            result.Set(resultW, resultH, resultC, resultN, current + val);
+                        }
+                    }
+                }
             }
         }
 

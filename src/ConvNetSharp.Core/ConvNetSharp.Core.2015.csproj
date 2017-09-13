@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>ConvNetSharp.Core</RootNamespace>
     <AssemblyName>ConvNetSharp.Core</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -32,7 +32,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Newtonsoft.Json.10.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -51,7 +51,9 @@
     <Compile Include="Layers\Double\ConvLayer.cs" />
     <Compile Include="Layers\Double\FullyConnLayer.cs" />
     <Compile Include="Layers\Double\InputLayer.cs" />
+    <Compile Include="Layers\Double\LeakyReluLayer.cs" />
     <Compile Include="Layers\Double\PoolLayer.cs" />
+    <Compile Include="Layers\Double\RegressionLayer.cs" />
     <Compile Include="Layers\Double\ReluLayer.cs" />
     <Compile Include="Layers\Double\SigmoidLayer.cs" />
     <Compile Include="Layers\Double\SoftmaxLayer.cs" />
@@ -63,14 +65,18 @@
     <Compile Include="Layers\InputLayer.cs" />
     <Compile Include="Layers\LastLayerBase.cs" />
     <Compile Include="Layers\LayerBase.cs" />
+    <Compile Include="Layers\LeakyReluLayer.cs" />
     <Compile Include="Layers\ParametersAndGradients.cs" />
     <Compile Include="Layers\PoolLayer.cs" />
+    <Compile Include="Layers\RegressionLayer.cs" />
     <Compile Include="Layers\ReluLayer.cs" />
     <Compile Include="Layers\SigmoidLayer.cs" />
     <Compile Include="Layers\Single\ConvLayer.cs" />
     <Compile Include="Layers\Single\FullyConnLayer.cs" />
     <Compile Include="Layers\Single\InputLayer.cs" />
+    <Compile Include="Layers\Single\LeakyReluLayer.cs" />
     <Compile Include="Layers\Single\PoolLayer.cs" />
+    <Compile Include="Layers\Single\RegressionLayer.cs" />
     <Compile Include="Layers\Single\ReluLayer.cs" />
     <Compile Include="Layers\Single\SigmoidLayer.cs" />
     <Compile Include="Layers\Single\SoftmaxLayer.cs" />
@@ -98,6 +104,9 @@
       <Project>{1a285120-f2f0-4a94-ab31-b4e870679c0e}</Project>
       <Name>ConvNetSharp.Volume.2015</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
