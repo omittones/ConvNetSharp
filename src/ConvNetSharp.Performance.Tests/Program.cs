@@ -29,23 +29,29 @@ namespace ConvNetSharp.Performance.Tests
             var cpuVolumeBuilder = new Volume.Double.VolumeBuilder();
 
             const int nmSets = 2000;
-            const int nmIterations = 1;
-            var input = Shape.From(590, 1, 1);
+            const int nmIterations = 10;
+            var input = Shape.From(100, 1, 1);
             var output = 3;
 
-            for (var batchSize = 500; batchSize < 2000; batchSize += 50)
+            int batchSize = 0;
+            for (var testBatchSize = 50.0; testBatchSize < 200.0; testBatchSize = testBatchSize * 1.05)
             {
-                Console.WriteLine($"-- {nameof(batchSize)} == {batchSize} ------------------");
+                if (batchSize != (int)testBatchSize)
+                {
+                    batchSize = (int)testBatchSize;
 
-                BuilderInstance<double>.Volume = cpuVolumeBuilder;
-                var testNet = Create(input, output, 30, 30, 30);
-                ExecuteNeuralNet("CPU", testNet, batchSize, nmSets, nmIterations);
+                    Console.WriteLine($"-- {nameof(batchSize)} == {batchSize} ------------------");
 
-                BuilderInstance<double>.Volume = gpuVolumeBuilder;
-                testNet = Create(input, output, 30, 30, 30);
-                ExecuteNeuralNet("GPU", testNet, batchSize, nmSets, nmIterations);
+                    //BuilderInstance<double>.Volume = cpuVolumeBuilder;
+                    //var testNet = Create(input, output, 1000);
+                    //ExecuteNeuralNet("CPU", testNet, batchSize, nmSets, nmIterations);
 
-                Console.WriteLine();
+                    BuilderInstance<double>.Volume = gpuVolumeBuilder;
+                    var gpuTestNet = Create(input, output, 100);
+                    ExecuteNeuralNet("GPU", gpuTestNet, batchSize, nmSets, nmIterations);
+
+                    Console.WriteLine();
+                }
             }
         }
 
@@ -129,6 +135,7 @@ namespace ConvNetSharp.Performance.Tests
 
             stopWatch.Stop();
 
+            Console.WriteLine("iteration: {0:0.000}ms", stopWatch.ElapsedMilliseconds / iterations);
             Console.WriteLine("    total: {0:0.000}ms", stopWatch.ElapsedMilliseconds);
             Console.WriteLine("  forward: {0:0.000}ms", trainer.ForwardTimeMs);
             Console.WriteLine(" backward: {0:0.000}ms", trainer.BackwardTimeMs);
