@@ -17,7 +17,7 @@ namespace ConvNetSharp.Core.Training
 
         public double ForwardTimeMs { get; protected set; }
 
-        public double UpdateWeightsTimeMs { get; private set; }
+        public double UpdateWeightsTimeMs { get; protected set; }
 
         public virtual T Loss { get; protected set; }
 
@@ -32,12 +32,13 @@ namespace ConvNetSharp.Core.Training
             this.BackwardTimeMs = chrono.Elapsed.TotalMilliseconds/batchSize;
         }
 
-        private void Forward(Volume<T> x)
+        protected virtual Volume<T> Forward(Volume<T> x)
         {
             var chrono = Stopwatch.StartNew();
             var batchSize = x.Shape.GetDimension(3);
-            this.Net.Forward(x, true); // also set the flag that lets the net know we're just training
-            this.ForwardTimeMs = chrono.Elapsed.TotalMilliseconds/batchSize;
+            var ret = this.Net.Forward(x, true); // also set the flag that lets the net know we're just training
+            this.ForwardTimeMs = chrono.Elapsed.TotalMilliseconds / batchSize;
+            return ret;
         }
 
         public virtual void Train(Volume<T> x, Volume<T> y)

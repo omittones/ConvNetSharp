@@ -48,9 +48,11 @@ namespace ConvNetSharp.Core
                 lastLayer.Backward(y, out loss); // last layer assumed to be loss layer
                 for (var i = n - 2; i >= 0; i--)
                 {
-                    // first layer assumed input
-                    this.Layers[i].Backward(this.Layers[i + 1].InputActivationGradients);
+                    var lastInputGradients = this.Layers[i + 1].InputActivationGradients;
+                    var thisLayer = this.Layers[i];
+                    thisLayer.Backward(lastInputGradients);
                 }
+
                 return loss;
             }
 
@@ -96,13 +98,11 @@ namespace ConvNetSharp.Core
         public List<ParametersAndGradients<T>> GetParametersAndGradients()
         {
             var response = new List<ParametersAndGradients<T>>();
-
-            foreach (var t in this.Layers)
+            foreach (var layer in this.Layers)
             {
-                var parametersAndGradients = t.GetParametersAndGradients();
-                response.AddRange(parametersAndGradients);
+                var parameters = layer.GetParametersAndGradients();
+                response.AddRange(parameters);
             }
-
             return response;
         }
 

@@ -215,9 +215,9 @@ namespace ConvNetSharp.Volume.Double
             this.Storage.Map(x => x <= 0 ? 0.01 * x : x, volume.Storage);
         }
 
-        public override void DoLeakyReluGradient(Volume<double> input, Volume<double> output, Volume<double> outputGradient)
+        public override void DoLeakyReluGradient(Volume<double> input, Volume<double> output, Volume<double> result)
         {
-            this.Storage.Map((x, y) => x >= 0 ? y : 0.01, output.Storage, outputGradient.Storage);
+            this.Storage.Map((x, y) => x >= 0 ? y : 0.01 * y, output.Storage, result.Storage);
         }
 
         public override void DoLog(Volume<double> result)
