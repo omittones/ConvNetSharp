@@ -58,11 +58,10 @@ namespace ConvNetSharp.Volume.Double
 
         protected override void DoBiasGradient(Volume<double> biasGradient)
         {
-            var batchSize = this.Shape.GetDimension(3);
-
             var outputWidth = this.Shape.GetDimension(0);
             var outputHeight = this.Shape.GetDimension(1);
             var outputDepth = this.Shape.GetDimension(2);
+            var batchSize = this.Shape.GetDimension(3);
 
             for (var n = 0; n < batchSize; n++)
             {
@@ -133,14 +132,16 @@ namespace ConvNetSharp.Volume.Double
             }
         }
 
-        public override void DoConvolutionGradient(Volume<double> filters, Volume<double> outputGradients,
-            Volume<double> inputGradient, Volume<double> filterGradient, int pad,
+        public override void DoConvolutionGradient(Volume<double> filters, 
+            Volume<double> outputGradients,
+            Volume<double> inputGradient, 
+            Volume<double> filterGradient, 
+            int pad,
             int stride)
         {
             inputGradient.Clear(); // zero out gradient wrt bottom data, we're about to fill it
 
             var batchSize = this.Shape.GetDimension(3);
-
             var inputWidth = this.Shape.GetDimension(0);
             var inputHeight = this.Shape.GetDimension(1);
 

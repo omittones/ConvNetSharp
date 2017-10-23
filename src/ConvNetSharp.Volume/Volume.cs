@@ -77,12 +77,6 @@ namespace ConvNetSharp.Volume
             return result;
         }
 
-        public void ConvolveGradient(Volume<T> filters, Volume<T> outputGradients, Volume<T> inputGradient,
-            Volume<T> filterGradient, int pad, int stride)
-        {
-            DoConvolutionGradient(filters, outputGradients, inputGradient, filterGradient, pad, stride);
-        }
-
         public abstract void DoActivation(Volume<T> result, ActivationType type);
 
         public abstract void DoActivationGradient(Volume<T> input, Volume<T> outputGradient, Volume<T> result, ActivationType type);

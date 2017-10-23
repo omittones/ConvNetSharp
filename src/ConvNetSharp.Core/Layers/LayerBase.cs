@@ -60,16 +60,11 @@ namespace ConvNetSharp.Core.Layers
 
         public virtual Volume<T> DoForward(Volume<T> input, bool isTraining = false)
         {
-#if DEBUG
-            var inputs = input.ToArray();
-            foreach(var i in inputs)
-                if (Ops<T>.IsInvalid(i))
-                    throw new ArgumentException("Invalid input!");
-#endif
+            Ops<T>.Validate(input);
 
             this.InputActivation = input;
 
-            var outputShape = new Shape(this.OutputWidth, this.OutputHeight, this.OutputDepth, input.Shape.DimensionCount == 4 ?  input.Shape.GetDimension(3) : 1);
+            var outputShape = new Shape(this.OutputWidth, this.OutputHeight, this.OutputDepth, input.Shape.DimensionCount == 4 ? input.Shape.GetDimension(3) : 1);
 
             if (this.OutputActivation == null ||
                 !this.OutputActivation.Shape.Equals(outputShape))
@@ -86,31 +81,22 @@ namespace ConvNetSharp.Core.Layers
 
             this.OutputActivation = Forward(input, isTraining);
 
-#if DEBUG
-            var outputs = this.OutputActivation.ToArray();
-            foreach (var o in outputs)
-                if (Ops<T>.IsInvalid(o))
-                    this.DumpAndThrow(input.ToArray());
-#endif
+            Ops<T>.Validate(this.OutputActivation);
 
             return this.OutputActivation;
         }
 
-#if DEBUG
-
-        protected void DumpAndThrow(T[] inputs)
-        {
-            var json = this.ToJson();
-            var ex = new NotSupportedException("Invalid layer state!");
-            ex.Data.Add("layer-json", json);
-
-            var inputJson = "[" + string.Join(", ", inputs.Select(i => i.ToString())) + "]";
-            ex.Data.Add("input-json", inputJson);
-
-            throw ex;
-        }
-
-#endif
+//#if DEBUG
+//        protected void DumpAndThrow(T[] inputs)
+//        {
+//            var json = this.ToJson();
+//            var ex = new NotSupportedException("Invalid layer state!");
+//            ex.Data.Add("layer-json", json);
+//            var inputJson = "[" + string.Join(", ", inputs.Select(i => i.ToString())) + "]";
+//            ex.Data.Add("input-json", inputJson);
+//            throw ex;
+//        }
+//#endif
 
         protected abstract Volume<T> Forward(Volume<T> input, bool isTraining = false);
 
