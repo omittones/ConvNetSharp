@@ -22,8 +22,8 @@ namespace ConvNetSharp.Volume.GPU
             this.DefaultThreadsPerBlock = props.MaxThreadsPerBlock;
             this.WarpSize = props.WarpSize;
 
-            this.DefaultStream = new CudaStream();
-            this.CudnnContext = new CudaDNNContext();
+            this.DefaultStream = new CudaStream();            
+            this.CudnnContext = new CudaDNNContextEx();
             this.CublasContext = new CudaBlas(this.DefaultStream.Stream, PointerMode.Device, AtomicsMode.NotAllowed);
         }
 
@@ -33,7 +33,7 @@ namespace ConvNetSharp.Volume.GPU
             private set { this._cudaContext = value; }
         }
 
-        public CudaDNNContext CudnnContext { get; }
+        public CudaDNNContextEx CudnnContext { get; }
 
         public CudaBlas CublasContext { get; }
 
