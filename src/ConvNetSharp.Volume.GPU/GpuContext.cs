@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using ManagedCuda;
 using ManagedCuda.CudaDNN;
+using ManagedCuda.CudaBlas;
 
 namespace ConvNetSharp.Volume.GPU
 {
@@ -21,9 +22,9 @@ namespace ConvNetSharp.Volume.GPU
             this.DefaultThreadsPerBlock = props.MaxThreadsPerBlock;
             this.WarpSize = props.WarpSize;
 
-            this.DefaultStream = new CudaStream();
-
-            this.CudnnContext = new CudaDNNContext();
+            this.DefaultStream = new CudaStream();            
+            this.CudnnContext = new CudaDNNContextEx();
+            this.CublasContext = new CudaBlas(this.DefaultStream.Stream, PointerMode.Device, AtomicsMode.NotAllowed);
         }
 
         public CudaContext CudaContext
@@ -32,7 +33,9 @@ namespace ConvNetSharp.Volume.GPU
             private set { this._cudaContext = value; }
         }
 
-        public CudaDNNContext CudnnContext { get; }
+        public CudaDNNContextEx CudnnContext { get; }
+
+        public CudaBlas CublasContext { get; }
 
         public static GpuContext Default => DefaultContextLazy.Value;
 

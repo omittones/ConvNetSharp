@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using ConvNetSharp.Core.Serialization;
 using ConvNetSharp.Volume;
 
 namespace ConvNetSharp.Core.Layers
@@ -84,8 +86,31 @@ namespace ConvNetSharp.Core.Layers
 
             this.OutputActivation = Forward(input, isTraining);
 
+#if DEBUG
+            var outputs = this.OutputActivation.ToArray();
+            foreach (var o in outputs)
+                if (Ops<T>.IsInvalid(o))
+                    this.DumpAndThrow(input.ToArray());
+#endif
+
             return this.OutputActivation;
         }
+
+#if DEBUG
+
+        protected void DumpAndThrow(T[] inputs)
+        {
+            var json = this.ToJson();
+            var ex = new NotSupportedException("Invalid layer state!");
+            ex.Data.Add("layer-json", json);
+
+            var inputJson = "[" + string.Join(", ", inputs.Select(i => i.ToString())) + "]";
+            ex.Data.Add("input-json", inputJson);
+
+            throw ex;
+        }
+
+#endif
 
         protected abstract Volume<T> Forward(Volume<T> input, bool isTraining = false);
 

@@ -1,19 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{1C5D92A1-272A-4545-BE0D-B4F836861E04}</ProjectGuid>
+    <ProjectGuid>{D1577013-5F86-48E8-8AF4-AC4E3813ECC0}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MnistDemo.GPU</RootNamespace>
-    <AssemblyName>MnistDemo.GPU</AssemblyName>
+    <RootNamespace>ConvNetSharp.Comparison</RootNamespace>
+    <AssemblyName>ConvNetSharp.Comparison</AssemblyName>
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>x64</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -21,21 +23,21 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x64</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject />
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="ConvNetSharp">
+      <HintPath>.\Previous\ConvNetSharp.dll</HintPath>
+      <Aliases>previous</Aliases>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -46,30 +48,42 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CircularBuffer.cs" />
-    <Compile Include="DataSet.cs" />
-    <Compile Include="DataSets.cs" />
-    <Compile Include="MnistEntry.cs" />
-    <Compile Include="MnistReader.cs" />
+    <Compile Include="CircledRegionTrainingSet.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="XorTrainingSet.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
+    <None Include="App.config" />
+    <None Include="Previous\ConvNetSharp.dll.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\ConvNetSharp.Core\ConvNetSharp.Core.csproj">
-      <Project>{30e2b6b4-5e66-4550-b5df-da443e04df57}</Project>
+    <ProjectReference Include="..\ConvNetSharp.Core\ConvNetSharp.Core.csproj">
+      <Project>{3a6864af-30b4-4c0e-b621-3571e3d88b43}</Project>
       <Name>ConvNetSharp.Core</Name>
+      <Aliases>latest</Aliases>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\ConvNetSharp.Volume.GPU\ConvNetSharp.Volume.GPU.csproj">
+    <ProjectReference Include="..\ConvNetSharp.Volume.GPU\ConvNetSharp.Volume.GPU.csproj">
       <Project>{608c97db-721f-4b34-be2d-01a85b762be9}</Project>
       <Name>ConvNetSharp.Volume.GPU</Name>
+      <Aliases>latest</Aliases>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\ConvNetSharp.Volume\ConvNetSharp.Volume.csproj">
-      <Project>{e617600f-2895-4ac3-b4e6-d22804fad532}</Project>
+    <ProjectReference Include="..\ConvNetSharp.Volume\ConvNetSharp.Volume.csproj">
+      <Project>{1a285120-f2f0-4a94-ab31-b4e870679c0e}</Project>
       <Name>ConvNetSharp.Volume</Name>
+      <Aliases>latest</Aliases>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Previous\ConvNetSharp.dll" />
+    <Content Include="Previous\ConvNetSharp.pdb" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
 </Project>

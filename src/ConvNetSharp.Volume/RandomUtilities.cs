@@ -8,7 +8,7 @@ namespace ConvNetSharp.Volume
         private static double val;
         private static bool returnVal;
 
-        public static int Seed => (int) 123;//DateTime.Now.Ticks;
+        public static int Seed => (int) DateTime.Now.Ticks;
 
         public static double GaussianRandom()
         {
@@ -36,6 +36,11 @@ namespace ConvNetSharp.Volume
             returnVal = true;
 
             return u * c;
+        }
+
+        public static double NextDouble()
+        {
+            return Random.NextDouble();
         }
 
         public static double Randn(double mu, double std)

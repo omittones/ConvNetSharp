@@ -59,5 +59,15 @@ namespace ConvNetSharp.Core.Tests
             var output2 = this.layer.DoForward(input, true);
             Assert.AreSame(output1, output2, "Storage is reused if possible.");
         }
+
+        [TestMethod]
+        public void GradientWrtInputCheck()
+        {
+            // Create layer
+            var softmax = new SoftmaxLayer(1000);
+            softmax.Init(10, 10, 10);
+
+            GradientCheckTools.GradientCheck(layer, 10, 10, 10, 3, 1e-6);
+        }
     }
 }

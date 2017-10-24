@@ -41,6 +41,14 @@ namespace ConvNetSharp.Volume
             }
         }
 
+        public void Map(Func<T,int, T> f, VolumeStorage<T> result)
+        {
+            for (var i = 0; i < this.Shape.TotalLength; i++)
+            {
+                result.Set(i, f(Get(i), i));
+            }
+        }
+
         /// <summary>
         /// Implement broadcast
         /// </summary>
@@ -60,6 +68,10 @@ namespace ConvNetSharp.Volume
                 {
                     throw new ArgumentException("Volumes have the same total number of dimensions but have different shapes");
                 }
+
+                // No broadcast to do here -> we switch to non-broacast implem
+                this.Map(f, other, result);
+                return;
             }
 
             var w = big.Shape.GetDimension(0);
@@ -115,6 +127,8 @@ namespace ConvNetSharp.Volume
         public abstract void Set(int w, int h, T value);
 
         public abstract void Set(int i, T value);
+
+        public abstract void Set(T[] values);
 
         public abstract T[] ToArray();
     }

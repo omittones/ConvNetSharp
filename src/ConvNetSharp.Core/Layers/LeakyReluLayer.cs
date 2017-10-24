@@ -24,7 +24,8 @@ namespace ConvNetSharp.Core.Layers
         {
             this.OutputActivationGradients = outputGradient;
 
-            this.OutputActivation.DoLeakyReluGradient(this.InputActivation,
+            this.OutputActivation.DoLeakyReluGradient(
+                this.InputActivation,
                 this.OutputActivationGradients,
                 this.InputActivationGradients);
         }

@@ -28,38 +28,42 @@ namespace ConvNetSharp.Performance.Tests
             var gpuVolumeBuilder = new Volume.GPU.Double.VolumeBuilder();
             var cpuVolumeBuilder = new Volume.Double.VolumeBuilder();
 
-            const int nmLayers = 3;
-            const int layerSize = 30;
-            const int nmSets = 12900;
-            const int nmIterations = 1;
-            var input = Shape.From(24, 1, 1);
-            var output = 2;
+            const int nmSets = 2000;
+            const int nmIterations = 10;
+            var input = Shape.From(100, 1, 1);
+            var output = 3;
 
-            for (var batchSize = 10; batchSize < nmSets; batchSize *= 2)
+            int batchSize = 0;
+            for (var testBatchSize = 50.0; testBatchSize < 200.0; testBatchSize = testBatchSize * 1.05)
             {
-                Console.WriteLine($"-- {nameof(batchSize)} == {batchSize} ------------------");
+                if (batchSize != (int)testBatchSize)
+                {
+                    batchSize = (int)testBatchSize;
 
-                BuilderInstance<double>.Volume = cpuVolumeBuilder;
-                var testNet = Create(layerSize, nmLayers, input, output);
-                ExecuteNeuralNet("CPU", testNet, batchSize, nmSets, nmIterations);
+                    Console.WriteLine($"-- {nameof(batchSize)} == {batchSize} ------------------");
 
-                BuilderInstance<double>.Volume = gpuVolumeBuilder;
-                testNet = Create(layerSize, nmLayers, input, output);
-                ExecuteNeuralNet("GPU", testNet, batchSize, nmSets, nmIterations);
+                    //BuilderInstance<double>.Volume = cpuVolumeBuilder;
+                    //var testNet = Create(input, output, 1000);
+                    //ExecuteNeuralNet("CPU", testNet, batchSize, nmSets, nmIterations);
 
-                Console.WriteLine();
+                    BuilderInstance<double>.Volume = gpuVolumeBuilder;
+                    var gpuTestNet = Create(input, output, 100);
+                    ExecuteNeuralNet("GPU", gpuTestNet, batchSize, nmSets, nmIterations);
+
+                    Console.WriteLine();
+                }
             }
         }
 
-        private static TestNet Create(int layerSize, int nmLayers, Shape input, int output)
+        private static TestNet Create(Shape input, int output, params int[] layerSizes)
         {
             var net = new TestNet();
             net.InputShape = new[] { Shape.From(input) };
             net.OutputShape = Shape.From(1, 1, output);
             net.AddLayer(new InputLayer(input.GetDimension(0), input.GetDimension(1), input.GetDimension(2)));
-            for (var i = 0; i < nmLayers; i++)
+            for (var i = 0; i < layerSizes.Length; i++)
             {
-                net.AddLayer(new FullyConnLayer(layerSize));
+                net.AddLayer(new FullyConnLayer(layerSizes[i]));
                 net.AddLayer(new ReluLayer());
             }
             net.AddLayer(new FullyConnLayer(output));
@@ -131,6 +135,7 @@ namespace ConvNetSharp.Performance.Tests
 
             stopWatch.Stop();
 
+            Console.WriteLine("iteration: {0:0.000}ms", stopWatch.ElapsedMilliseconds / iterations);
             Console.WriteLine("    total: {0:0.000}ms", stopWatch.ElapsedMilliseconds);
             Console.WriteLine("  forward: {0:0.000}ms", trainer.ForwardTimeMs);
             Console.WriteLine(" backward: {0:0.000}ms", trainer.BackwardTimeMs);
