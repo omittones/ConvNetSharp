@@ -103,8 +103,14 @@ namespace ConvNetSharp.Core.Layers
             this.OutputActivationGradients = outputGradient;
 
             // compute gradient wrt weights and data
-            this.InputActivation.ConvolveGradient(this.Filters, this.OutputActivationGradients,
-                this.InputActivationGradients, this.FiltersGradient, this.Pad, this.Stride);
+            this.InputActivation.DoConvolutionGradient(
+                this.Filters,
+                this.OutputActivationGradients,
+                this.InputActivationGradients,
+                this.FiltersGradient,
+                this.Pad,
+                this.Stride);
+
             this.OutputActivationGradients.BiasGradient(this.BiasGradient);
         }
 

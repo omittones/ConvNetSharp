@@ -58,23 +58,6 @@ namespace ConvNetSharp.Core.Layers
             }
         }
 
-        public override void Backward(Volume<T> outputGradient)
-        {
-            this.OutputActivationGradients = outputGradient;
-
-            // compute gradient wrt weights and data
-            using (var reshapedInput = this.InputActivation.ReShape(1, 1, -1, this.InputActivation.Shape.GetDimension(3)))
-            using (var reshapedInputGradients = this.InputActivationGradients.ReShape(1, 1, -1, this.InputActivationGradients.Shape.GetDimension(3)))
-            {
-                reshapedInput.ConvolveGradient(
-                    this.Filters, this.OutputActivationGradients,
-                    reshapedInputGradients, this.FiltersGradient,
-                    0, 1);
-
-                this.OutputActivationGradients.BiasGradient(this.BiasGradient);
-            }
-        }
-
         protected override Volume<T> Forward(Volume<T> input, bool isTraining = false)
         {
             using (var reshapedInput = input.ReShape(1, 1, -1, input.Shape.GetDimension(3)))
@@ -85,6 +68,25 @@ namespace ConvNetSharp.Core.Layers
             }
         }
 
+        public override void Backward(Volume<T> outputGradient)
+        {
+            this.OutputActivationGradients = outputGradient;
+
+            // compute gradient wrt weights and data
+            using (var reshapedInput = this.InputActivation.ReShape(1, 1, -1, this.InputActivation.Shape.GetDimension(3)))
+            using (var reshapedInputGradients = this.InputActivationGradients.ReShape(1, 1, -1, this.InputActivationGradients.Shape.GetDimension(3)))
+            {
+                reshapedInput.DoConvolutionGradient(
+                    this.Filters,
+                    this.OutputActivationGradients,
+                    reshapedInputGradients,
+                    this.FiltersGradient,
+                    0, 1);
+
+                this.OutputActivationGradients.BiasGradient(this.BiasGradient);
+            }
+        }
+        
         public override Dictionary<string, object> GetData()
         {
             var dico = base.GetData();
