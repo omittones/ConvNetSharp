@@ -27,5 +27,14 @@ namespace ConvNetSharp.Volume
 
             return arr;
         }
+
+        public static Volume<T> Max<T>(this Volume<T> source)
+            where T : struct, IEquatable<T>, IFormattable
+        {
+            var n = source.Shape.GetDimension(3);
+            var result = BuilderInstance<T>.Volume.SameAs(Shape.From(1, 1, 1, n));
+            source.DoMax(result);
+            return result;
+        }
     }
 }

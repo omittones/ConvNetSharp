@@ -117,6 +117,11 @@ namespace ConvNetSharp.Volume
             var real = source as NcwhVolumeStorage<T>;
 
             Array.Copy(real._storage, this._storage, this._storage.Length);
-        }        
+        }
+
+        public override string ToString()
+        {
+            return this._storage.ToString("0.000");
+        }
     }
 }

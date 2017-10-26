@@ -25,14 +25,14 @@ namespace ConvNetSharp.ReinforcementLearning.Deep
         private double _forwardPasses = 0;
         private double _epsilon = 1.0;
         private double _latestReward = 0;
-        private Volume.Double.Volume _lastInput;
+        private Volume<double> _lastInput;
         private List<Experience> _experienceReplay;
 
         // Windows
-        private List<Volume.Double.Volume> _stateWindow;
+        private List<Volume<double>> _stateWindow;
         private List<int> _actionWindow;
         private List<double> _rewardWindow;
-        private List<Volume.Double.Volume> _netWindow;
+        private List<Volume<double>> _netWindow;
         private TrainingWindow _averageRewardWindow;
         private TrainingWindow _averageLossWindow;
         #endregion
@@ -109,10 +109,10 @@ namespace ConvNetSharp.ReinforcementLearning.Deep
 
             // Initialize windows
             _windowSize = Math.Max(_trainingOptions.TemporalWindow, 2); // must be at least 2, but if more context is desired, add more
-            _stateWindow = new List<Volume.Double.Volume>();            // Single states
+            _stateWindow = new List<Volume<double>>();            // Single states
             _actionWindow = new List<int>();
             _rewardWindow = new List<double>();
-            _netWindow = new List<Volume.Double.Volume>();              // Convolute of states which are actually fed to the neural net
+            _netWindow = new List<Volume<double>>();              // Convolute of states which are actually fed to the neural net
 
             // Add dummy data to the windows
             for (int i = 0; i < _windowSize; i++)
@@ -134,14 +134,14 @@ namespace ConvNetSharp.ReinforcementLearning.Deep
         /// </summary>
         /// <param name="inputVolume">Current state input of the agent</param>
         /// <returns>Returns the decision for an action, based on the learned policy or the epsilon-greedy policy (exploration).</returns>
-        public int Forward(Volume.Double.Volume inputVolume)
+        public int Forward(Volume<double> inputVolume)
         {
             _forwardPasses++;
             _lastInput = inputVolume;
             int action = 0;
 
             // Create net input
-            Volume.Double.Volume netInput;
+            Volume<double> netInput;
 
             // Check if enough data has been gathered
             if(_forwardPasses > _trainingOptions.TemporalWindow)
@@ -321,7 +321,7 @@ namespace ConvNetSharp.ReinforcementLearning.Deep
         /// </summary>
         /// <param name="currentInputVolume">Current input information</param>
         /// <returns>Returns the input volume based on the present and past inputs.</returns>
-        private Volume.Double.Volume GetNetInput(Volume.Double.Volume currentInputVolume)
+        private Volume<double> GetNetInput(Volume<double> currentInputVolume)
         {
             // return s = (x,a,x,a,x,a,xt) state vector.        xt = currentInputVolume
             // It's a concatenation of last _windowSize (x,a) pairs and current state xt
