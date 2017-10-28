@@ -25,26 +25,29 @@ namespace ConvNetSharp.Core.Layers
 
         public override void Backward(Volume<T> outputGradient)
         {
-            throw new NotImplementedException();
+            T unused;
+            Backward(outputGradient, out unused);
         }
 
         public override void Backward(Volume<T> y, out T loss)
         {
-            var reshape = y.ReShape(new Shape(1, 1, -1, Shape.Keep));
-            var dy = this.InputActivationGradients.ReShape(this.OutputActivation.Shape.Dimensions.ToArray());
-            reshape.DoSubtractFrom(this.OutputActivation, dy);
+            var yAdjusted = y.ReShape(new Shape(1, 1, -1, Shape.Keep));
+            var inputActGrad = this.InputActivationGradients.ReShape(this.OutputActivation.Shape);
+            yAdjusted.DoSubtractFrom(this.OutputActivation, inputActGrad);
 
-            if (this._result == null)
+            if (this._result == null ||
+                this._result.Shape.GetDimension(3) != this.OutputActivation.Shape.GetDimension(3))
             {
                 this._result = BuilderInstance<T>.Volume.SameAs(this.OutputActivation.Shape);
                 this._sum = BuilderInstance<T>.Volume.SameAs(new Shape(1));
             }
 
             this._sum.Clear();
-            dy.DoMultiply(dy, this._result); // dy * dy
-            var half = (T)Convert.ChangeType(0.5, typeof(T));
+            inputActGrad.DoMultiply(inputActGrad, this._result); // dy * dy
+            var half = Ops<T>.Cast(0.5);
             this._result.DoMultiply(this._result, half); // dy * dy * 0.5
             this._result.DoSum(this._sum); // sum over all batch
+
             var batchSize = y.Shape.GetDimension(3);
             loss = Ops<T>.Divide(this._sum.Get(0), Ops<T>.Cast(batchSize)); // average
         }

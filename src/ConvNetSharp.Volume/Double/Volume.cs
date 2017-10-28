@@ -241,7 +241,7 @@ namespace ConvNetSharp.Volume.Double
             }
         }
 
-        public override void DoDropoutGradient(Volume<double> input, Volume<double> outputGradient, Volume<double> inputGradient, double dropProbability)
+        public override void DoDropoutGradient(Volume<double> input, Volume<double> outputGradient, Volume<double> result, double dropProbability)
         {
             outputGradient.Storage.Map((x, i) =>
             {
@@ -252,7 +252,7 @@ namespace ConvNetSharp.Volume.Double
 
                 return x / (1.0 - dropProbability);
 
-            }, inputGradient.Storage);
+            }, result.Storage);
         }
 
         public override void DoExp(Volume<double> result)
