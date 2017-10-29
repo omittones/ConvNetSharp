@@ -9,26 +9,37 @@ namespace ConvNetSharp.Core.Training
         private readonly Random rnd;
         private readonly int nmActions;
         private readonly Net<double> net;
-        private readonly List<Experience> replayMemory;
-        private int repMemIndex;
-        
+        private readonly Experiences replayMemory;
+
         public int Samples { get; private set; }
         public double Loss { get; private set; }
+        public int ReplayMemoryCount => replayMemory.Count;
 
         public double Gamma { get; set; }
         public double Epsilon { get; set; }
         public double Alpha { get; set; }
         public int ReplaySkipCount { get; set; }
-        public int ReplayMemorySize { get; set; }
         public int LearningStepsPerIteration { get; set; }
         public double ClampErrorTo { get; set; }
+
+        public int ReplayMemorySize
+        {
+            get => this.replayMemory.Size;
+            set => this.replayMemory.Size = value;
+        }
+
+        public ExperienceDiscardStrategy ReplayMemoryDiscardStrategy
+        {
+            get => replayMemory.DiscardStrategy;
+            set => replayMemory.DiscardStrategy = value;
+        }
 
         public DQNTrainer(
             Net<double> net,
             int nmActions)
         {
             this.rnd = new Random(DateTime.Now.Millisecond);
-            this.replayMemory = new List<Experience>();
+            this.replayMemory = new Experiences();
 
             this.Gamma = 0.75; // future reward discount factor
             this.Epsilon = 0.1; // for epsilon-greedy policy
@@ -54,9 +65,6 @@ namespace ConvNetSharp.Core.Training
             // not proud of this. better solution is to have a whole Net object
             // on top of Mats, but for now sticking with this
             this.replayMemory.Clear();
-
-            // where to insert
-            this.repMemIndex = 0;
         }
 
         public Action Act(double[] state)
@@ -94,14 +102,8 @@ namespace ConvNetSharp.Core.Training
                 if (this.ReplaySkipCount < 1 ||
                     this.Samples % this.ReplaySkipCount == 0)
                 {
-                    if (this.repMemIndex == this.replayMemory.Count)
-                        this.replayMemory.Add(new Experience());
-                    this.replayMemory[this.repMemIndex] = xp;
-                    this.repMemIndex += 1;
-
                     // roll over when we run out
-                    if (this.repMemIndex > this.ReplayMemorySize)
-                        this.repMemIndex = 0;
+                    this.replayMemory.Add(xp);
                 }
                 this.Samples += 1;
 
@@ -141,15 +143,14 @@ namespace ConvNetSharp.Core.Training
             // now predict
             var expected = this.net.Forward(s0, true).Clone();
             var a0val = expected.Get(0, 0, a0, 0);
-            var tderror = a0val - qmax;
-            var clamp = this.ClampErrorTo;
+            var error = a0val - qmax;
 
             // huber loss to robustify
-            var clampedError = tderror;
-            if (clampedError > clamp)
-                clampedError = clamp;
-            if (clampedError < -clamp)
-                clampedError = -clamp;
+            var clampedError = error;
+            if (clampedError > this.ClampErrorTo)
+                clampedError = this.ClampErrorTo;
+            if (clampedError < -this.ClampErrorTo)
+                clampedError = -this.ClampErrorTo;
 
             //pred.dw[a0] = tderror;
             expected.Set(0, 0, a0, 0, a0val - clampedError);
@@ -160,7 +161,7 @@ namespace ConvNetSharp.Core.Training
             // update net
             this.updateNet(this.net, this.Alpha);
 
-            return Math.Abs(tderror);
+            return Math.Abs(clampedError);
         }
 
         private void updateNet(INet<double> net, double alpha)

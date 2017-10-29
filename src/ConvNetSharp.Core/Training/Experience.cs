@@ -1,6 +1,6 @@
 ﻿namespace ConvNetSharp.Core.Training
 {
-    internal struct Experience
+    internal class Experience
     {
         public double reward;
         public double[] state;
@@ -16,6 +16,11 @@
                 actionTaken = a0,
                 reward = r0
             };
+        }
+
+        public override string ToString()
+        {
+            return $"reward({actionTaken}) == {reward:0.0000}";
         }
     }
 }
