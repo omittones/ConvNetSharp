@@ -13,6 +13,7 @@ namespace ConvNetSharp.Core.Training
 
         public int Samples { get; private set; }
         public double Loss { get; private set; }
+        public double QValue { get; private set; }
         public int ReplayMemoryCount => replayMemory.Count;
 
         public double Gamma { get; set; }
@@ -87,16 +88,16 @@ namespace ConvNetSharp.Core.Training
             return action;
         }
 
-        public void Learn(Action action, double[] nextState, double reward)
+        public double Learn(Action action, double[] nextState, double reward)
         {
+            this.QValue = double.MinValue;
+
             // perform an update on Q function
             if (this.Alpha > 0)
             {
-                var trainingSet = new List<Experience>();
-
                 // learn from this tuple to get a sense of how "surprising" it is to the agent
                 var xp = Experience.New(action.State, action.Decision, reward, (double[])nextState.Clone());
-                trainingSet.Add(xp);
+                this.Loss = learnFromExperience(xp.state, xp.actionTaken, xp.reward, xp.nextState);
 
                 // decide if we should keep this experience in the replay
                 if (this.ReplaySkipCount < 1 ||
@@ -107,6 +108,7 @@ namespace ConvNetSharp.Core.Training
                 }
                 this.Samples += 1;
 
+                var trainingSet = new List<Experience>();
                 if (this.LearningStepsPerIteration > this.replayMemory.Count)
                 {
                     trainingSet.AddRange(this.replayMemory);
@@ -121,11 +123,11 @@ namespace ConvNetSharp.Core.Training
                     }
                 }
 
-                var loss = 0.0;
                 foreach (var e in trainingSet)
-                    loss += learnFromExperience(e.state, e.actionTaken, e.reward, e.nextState);
-                this.Loss = loss / trainingSet.Count;
+                    learnFromExperience(e.state, e.actionTaken, e.reward, e.nextState);
             }
+
+            return this.Loss;
         }
 
         private double learnFromExperience(Volume<double> s0, int a0, double r0, Volume<double> s1)
@@ -139,6 +141,9 @@ namespace ConvNetSharp.Core.Training
                 var a1val = a1vol.IndexOfMax();
                 qmax += this.Gamma * a1vol.Get(0, 0, a1val, 0);
             }
+
+            if (this.QValue < qmax)
+                this.QValue = qmax;
 
             // now predict
             var expected = this.net.Forward(s0, true).Clone();
@@ -161,7 +166,7 @@ namespace ConvNetSharp.Core.Training
             // update net
             this.updateNet(this.net, this.Alpha);
 
-            return Math.Abs(clampedError);
+            return Math.Abs(error);
         }
 
         private void updateNet(INet<double> net, double alpha)
