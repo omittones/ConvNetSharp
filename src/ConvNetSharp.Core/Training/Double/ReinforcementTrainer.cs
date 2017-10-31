@@ -1,8 +1,12 @@
-﻿namespace ConvNetSharp.Core.Training.Double
+﻿using System;
+
+namespace ConvNetSharp.Core.Training.Double
 {
     public class ReinforcementTrainer : ReinforcementTrainer<double>
     {
-        public ReinforcementTrainer(Net<double> net) : base(net)
+        public ReinforcementTrainer(
+            Net<double> net,
+            Random rnd) : base(net, rnd)
         {
         }
     }

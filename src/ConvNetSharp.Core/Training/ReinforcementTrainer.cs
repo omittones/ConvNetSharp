@@ -11,19 +11,49 @@ namespace ConvNetSharp.Core.Training
 
     {
         private readonly IReinforcementLayer<T> lossLayer;
+        private readonly Random rnd;
 
-        public ReinforcementTrainer(Net<T> net) : base(net)
+        public ReinforcementTrainer(
+            Net<T> net,
+            Random rnd) : base(net)
         {
             this.lossLayer = net.Layers
                 .OfType<IReinforcementLayer<T>>()
                 .FirstOrDefault();
+
+            this.rnd = rnd;
         }
 
-        public void Reinforce(Volume<T> inputs, T[] loss)
+        public int[] Act(Volume<T> inputs)
+        {
+            var output = this.Net.Forward(inputs, false);
+            var classCount = output.Shape.GetDimension(2);
+
+            var values = new T[classCount];
+            var prediction = new int[this.BatchSize];
+            for (var n = 0; n < this.BatchSize; n++)
+            {
+                values[0] = output.Get(0, 0, 0, n);
+                for (var j = 1; j < classCount; j++)
+                    values[j] = Ops<T>.Add(values[j - 1], output.Get(0, 0, j, n));
+
+                var random = Ops<T>.Cast(rnd.NextDouble());
+                for (var j = 0; j < classCount; j++)
+                    if (Ops<T>.GreaterThan(values[j], random))
+                    {
+                        prediction[n] = j;
+                        break;
+                    }
+            }
+
+            return prediction;
+        }
+
+        public void Reinforce(Volume<T> inputs, int[] selectedActions, T[] loss)
         {
             var outputs = this.Forward(inputs);
 
-            this.lossLayer.SetLoss(loss);
+            this.lossLayer.SetLoss(selectedActions, loss);
 
             this.Backward(outputs);
 

@@ -20,7 +20,7 @@ namespace ConvNetSharp.Core.Training
         public double Epsilon { get; set; }
         public double Alpha { get; set; }
         public int ReplaySkipCount { get; set; }
-        public int LearningStepsPerIteration { get; set; }
+        public int ReplaysPerIteration { get; set; }
         public double ClampErrorTo { get; set; }
 
         public int ReplayMemorySize
@@ -47,7 +47,8 @@ namespace ConvNetSharp.Core.Training
             this.Alpha = 0.01; // value function learning rate
             this.ReplaySkipCount = 25; // number of time steps before we add another experience to replay memory
             this.ReplayMemorySize = 5000; // size of experience replay
-            this.LearningStepsPerIteration = 10;
+            this.ReplayMemoryDiscardStrategy = ExperienceDiscardStrategy.First;
+            this.ReplaysPerIteration = 10;
             this.ClampErrorTo = 1.0;
 
             this.nmActions = nmActions;
@@ -109,14 +110,14 @@ namespace ConvNetSharp.Core.Training
                 this.Samples += 1;
 
                 var trainingSet = new List<Experience>();
-                if (this.LearningStepsPerIteration > this.replayMemory.Count)
+                if (this.ReplaysPerIteration > this.replayMemory.Count)
                 {
                     trainingSet.AddRange(this.replayMemory);
                 }
                 else
                 {
                     // sample some additional experience from replay memory and learn from it
-                    for (var k = 0; k < this.LearningStepsPerIteration; k++)
+                    for (var k = 0; k < this.ReplaysPerIteration; k++)
                     {
                         var ri = this.rnd.Next(0, this.replayMemory.Count); // todo: priority sweeps?
                         trainingSet.Add(this.replayMemory[ri]);

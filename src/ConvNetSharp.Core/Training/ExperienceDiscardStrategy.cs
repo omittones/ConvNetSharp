@@ -2,8 +2,8 @@
 {
     public enum ExperienceDiscardStrategy
     {
+        First,
         WorstReward,
-        BestReward,
-        First
+        BestReward        
     }
 }
