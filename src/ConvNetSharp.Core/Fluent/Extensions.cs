@@ -57,9 +57,10 @@ namespace ConvNetSharp.Core.Fluent
 
         public static SoftmaxLayer<T> Softmax<T>(this LayerBase<T> layer, int classCount) where T : struct, IEquatable<T>, IFormattable
         {
-            var softMax = new SoftmaxLayer<T>(classCount);
+            var softMax = new SoftmaxLayer<T>();
             layer.ConnectTo(softMax);
-
+            if (softMax.ClassCount != classCount)
+                throw new NotSupportedException();
             return softMax;
         }
 

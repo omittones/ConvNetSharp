@@ -4,11 +4,11 @@ namespace ConvNetSharp.Core.Layers.Single
 {
     public class SoftmaxLayer : SoftmaxLayer<float>
     {
-        public SoftmaxLayer(Dictionary<string, object> data) : base(data)
+        public SoftmaxLayer()
         {
         }
 
-        public SoftmaxLayer(int classCount) : base(classCount)
+        public SoftmaxLayer(Dictionary<string, object> data) : base(data)
         {
         }
     }

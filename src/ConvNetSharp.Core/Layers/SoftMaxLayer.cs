@@ -6,17 +6,16 @@ namespace ConvNetSharp.Core.Layers
 {
     public class SoftmaxLayer<T> : LastLayerBase<T>, IClassificationLayer where T : struct, IEquatable<T>, IFormattable
     {
+        public SoftmaxLayer()
+        {
+        }
+
         public SoftmaxLayer(Dictionary<string, object> data) : base(data)
         {
             this.ClassCount = Convert.ToInt32(data["ClassCount"]);
         }
 
-        public SoftmaxLayer(int classCount)
-        {
-            this.ClassCount = classCount;
-        }
-
-        public int ClassCount { get; set; }
+        public int ClassCount { get; private set; }
 
         /// <summary>
         /// This computes the cross entropy loss and its gradient (not the softmax gradient)
@@ -83,6 +82,7 @@ namespace ConvNetSharp.Core.Layers
             this.OutputWidth = 1;
             this.OutputHeight = 1;
             this.OutputDepth = inputCount;
+            this.ClassCount = inputCount;
         }
     }
 }

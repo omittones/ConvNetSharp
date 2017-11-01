@@ -23,10 +23,10 @@ namespace ConvNetSharp.Core.Layers
         {
         }
 
-        public override void Backward(Volume<T> outputGradient)
+        public override void Backward(Volume<T> y)
         {
             T unused;
-            Backward(outputGradient, out unused);
+            Backward(y, out unused);
         }
 
         public override void Backward(Volume<T> y, out T loss)

@@ -2,6 +2,6 @@
 {
     public interface IClassificationLayer
     {
-        int ClassCount { get; set; }
+        int ClassCount { get; }
     }
 }

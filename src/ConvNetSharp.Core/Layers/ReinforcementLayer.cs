@@ -3,15 +3,21 @@ using ConvNetSharp.Volume;
 
 namespace ConvNetSharp.Core.Layers
 {
-    public class ReinforcementSoftmaxLayer<T> : SoftmaxLayer<T>, IReinforcementLayer<T>
+    public class ReinforcementLayer<T> : SoftmaxLayer<T>, IReinforcementLayer<T>, ILastLayer<T>
         where T : struct, IEquatable<T>, IFormattable
     {
-        private Volume<T> maxes;
+        private int classCount;
         private T[] losses;
         private int[] selectedActions;
 
-        public ReinforcementSoftmaxLayer(int classCount) : base(classCount)
+        public override void Init(int inputWidth, int inputHeight, int inputDepth)
         {
+            base.Init(inputWidth, inputHeight, inputDepth);
+
+            if (inputWidth != 1 || inputHeight != 1)
+                throw new NotSupportedException();
+
+            this.classCount = inputDepth;
         }
 
         public void SetLoss(int[] selectedActions, T[] losses)
@@ -35,24 +41,20 @@ namespace ConvNetSharp.Core.Layers
 
         public override void Backward(Volume<T> y, out T loss)
         {
-            loss = Ops<T>.Zero;
-            foreach (var item in this.losses)
-                loss = Ops<T>.Add(loss, item);
+            base.Backward(y, out loss);
 
             var shape = this.OutputActivation.Shape;
-            var count = shape.GetDimension(3);
-            for (var n = 0; n < count; n++)
+            var batches = shape.GetDimension(3);
+
+            loss = Ops<T>.Zero;
+            this.InputActivationGradients.Clear();
+            for (var batch = 0; batch < batches; batch++)
             {
-                for (var x = 0; x < ClassCount; x++)
-                {
-                    var amount = losses[n];
-                    var classProbability = this.OutputActivation.Get(0, 0, x, n);
-                    var wasPredicted = selectedActions[n] == x;
-                    if (wasPredicted)
-                        this.InputActivationGradients.Set(0, 0, x, amount);
-                    else
-                        this.InputActivationGradients.Set(0, 0, x, Ops<T>.Zero);
-                }
+                //amount = Ops<T>.Negate(amount);
+                //var classProbability = this.OutputActivation.Get(0, 0, x, n);
+                var amount = losses[batch];
+                loss = Ops<T>.Add(loss, Ops<T>.Multiply(amount, amount));
+                this.InputActivationGradients.Set(0, 0, selectedActions[batch], batch, amount);
             }
         }
     }

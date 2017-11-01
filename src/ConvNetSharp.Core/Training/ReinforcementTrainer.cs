@@ -36,7 +36,9 @@ namespace ConvNetSharp.Core.Training
                 values[0] = output.Get(0, 0, 0, n);
                 for (var j = 1; j < classCount; j++)
                     values[j] = Ops<T>.Add(values[j - 1], output.Get(0, 0, j, n));
-
+                for (var j = 0; j < classCount; j++)
+                    values[j] = Ops<T>.Divide(values[j], values[classCount - 1]);
+                
                 var random = Ops<T>.Cast(rnd.NextDouble());
                 for (var j = 0; j < classCount; j++)
                     if (Ops<T>.GreaterThan(values[j], random))
@@ -59,6 +61,13 @@ namespace ConvNetSharp.Core.Training
 
             var batchSize = inputs.Shape.GetDimension(3);
             var chrono = Stopwatch.StartNew();
+
+            //foreach (var prmtrs in this.Net.GetParametersAndGradients())
+            //{
+            //    prmtrs.Gradient.DoMultiply(prmtrs.Gradient, this.LearningRate);
+            //    prmtrs.Gradient.DoAdd(prmtrs.Volume, prmtrs.Volume);
+            //    prmtrs.Gradient.Clear();
+            //}
 
             TrainImplem();
 

@@ -117,6 +117,8 @@ namespace ConvNetSharp.Core
                 inputHeight = this.Layers[this.Layers.Count - 1].OutputHeight;
                 inputDepth = this.Layers[this.Layers.Count - 1].OutputDepth;
                 lastLayer = this.Layers[this.Layers.Count - 1];
+
+                layer.Init(inputWidth, inputHeight, inputDepth);
             }
             else if (!(layer is InputLayer<T>))
             {
@@ -126,14 +128,14 @@ namespace ConvNetSharp.Core
             var classificationLayer = layer as IClassificationLayer;
             if (classificationLayer != null)
             {
-                var fullconLayer = lastLayer as FullyConnLayer<T>;
-                if (fullconLayer == null)
+                var fullConnLayer = lastLayer as FullyConnLayer<T>;
+                if (fullConnLayer == null)
                 {
                     throw new ArgumentException(
                         $"Previously added layer should be a FullyConnLayer with {classificationLayer.ClassCount} Neurons");
                 }
 
-                if (fullconLayer.NeuronCount != classificationLayer.ClassCount)
+                if (fullConnLayer.NeuronCount != classificationLayer.ClassCount)
                 {
                     throw new ArgumentException(
                         $"Previous FullyConnLayer should have {classificationLayer.ClassCount} Neurons");
@@ -154,12 +156,7 @@ namespace ConvNetSharp.Core
                     //dotProductLayer.BiasPref = (T)Convert.ChangeType(0.1, typeof(T)); // can we do better?
                 }
             }
-
-            if (this.Layers.Count > 0)
-            {
-                layer.Init(inputWidth, inputHeight, inputDepth);
-            }
-
+            
             this.Layers.Add(layer);
         }
 
