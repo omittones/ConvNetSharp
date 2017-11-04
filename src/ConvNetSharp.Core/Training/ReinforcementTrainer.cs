@@ -58,15 +58,12 @@ namespace ConvNetSharp.Core.Training
             return prediction;
         }
 
-        public void Reinforce(int[] selectedActions, T[] loss)
+        public void Reinforce(int[][] pathActions, T[] rewards)
         {
-            Debug.Assert(selectedActions.Length == loss.Length);
-            Debug.Assert(selectedActions.Length == this.inputs.BatchSize);
-
             //Discount Returns r0 = (r0 + r1 * gamma + r2 * gamma^2 + r2 * gamma^3 ...)
             //Advantage = Returns - baseline
 
-            this.lossLayer.SetLoss(selectedActions, loss);
+            this.lossLayer.SetLoss(pathActions, rewards);
 
             //refit baseline to minimize Sum[(R - b)^2]
             //var mean = averages.Average();
@@ -75,8 +72,6 @@ namespace ConvNetSharp.Core.Training
             //averages = averages.Select(a => a / stdev).ToArray();
 
             this.Backward(this.inputs);
-
-            var batchSize = selectedActions.Length;
 
             var chrono = Stopwatch.StartNew();
 
@@ -89,7 +84,7 @@ namespace ConvNetSharp.Core.Training
 
             TrainImplem();
 
-            this.UpdateWeightsTimeMs = chrono.Elapsed.TotalMilliseconds / batchSize;
+            this.UpdateWeightsTimeMs = chrono.Elapsed.TotalMilliseconds / this.inputs.BatchSize;
         }
     }
 }

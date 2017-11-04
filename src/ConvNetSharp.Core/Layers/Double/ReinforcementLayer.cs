@@ -1,6 +1,6 @@
 ﻿namespace ConvNetSharp.Core.Layers.Double
 {
-    public class ReinforcementLayer : ReinforcementLayer<double>
-    {
-    }
+    //public class ReinforcementLayer : ReinforcementLayer<double>
+    //{
+    //}
 }
