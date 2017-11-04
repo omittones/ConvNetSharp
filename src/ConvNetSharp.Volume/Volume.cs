@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 
 namespace ConvNetSharp.Volume
@@ -20,6 +22,14 @@ namespace ConvNetSharp.Volume
         public VolumeStorage<T> Storage { get; }
 
         public Shape Shape => this.Storage.Shape;
+
+        public int Width => Shape.GetDimension(0);
+
+        public int Height => Shape.GetDimension(1);
+
+        public int Depth => Shape.GetDimension(2);
+
+        public int BatchSize => Shape.GetDimension(3);
 
         public virtual void Dispose()
         {
@@ -413,35 +423,52 @@ namespace ConvNetSharp.Volume
             return this.Storage.ToArray();
         }
 
+        public IEnumerable<string> RenderMatrix(int depth, int batch, string format)
+        {
+            StringBuilder sb = new StringBuilder();
+            for (var i = 0; i < this.Height; i++)
+            {
+                sb.Append("[");
+                for (var j = 0; j < this.Width; j++)
+                {
+                    if (j != 0)
+                        sb.Append(", ");
+                    sb.AppendFormat("{0:" + format + "}", Get(j, i, depth, batch));
+                }
+                sb.Append("]");
+                yield return sb.ToString();
+            }
+        }
+
         public override string ToString()
         {
-            //Todo: improve
-            var sb = new StringBuilder();
-            for (var n = 0; n < this.Shape.GetDimension(3); n++)
+            return this.ToString("0.00");
+        }
+
+        public string ToString(string format)
+        {
+            var output = new StringBuilder();
+            for (var batch = 0; batch < this.BatchSize; batch++)
             {
-                for (var c = 0; c < this.Shape.GetDimension(2); c++)
+                string[] lines = null;
+                for (var depth = 0; depth < this.Depth; depth++)
                 {
-                    sb.Append("[");
-
-                    for (var i = 0; i < this.Shape.GetDimension(1); i++)
-                    {
-                        sb.Append("[");
-                        for (var j = 0; j < this.Shape.GetDimension(0); j++)
-                        {
-                            sb.Append(Get(j, i, c, n));
-                            sb.Append(", ");
-                        }
-
-                        sb.Append("],");
-                        sb.Append(Environment.NewLine);
-                    }
-
-                    sb.Append("],");
-                    sb.Append(Environment.NewLine);
+                    var next = RenderMatrix(depth, batch, format).ToArray();
+                    if (lines == null)
+                        lines = next;
+                    else
+                        for (var i = 0; i < lines.Length; i++)
+                            lines[i] += ", " + next[i];
                 }
+                if (batch != 0)
+                {
+                    output.Append('-', lines[0].Length);
+                    output.AppendLine();
+                }
+                foreach (var line in lines)
+                    output.AppendLine(line);
             }
-
-            return sb.ToString();
+            return output.ToString();
         }
     }
 }

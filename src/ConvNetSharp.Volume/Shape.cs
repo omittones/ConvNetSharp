@@ -43,6 +43,7 @@ namespace ConvNetSharp.Volume
             {
                 return false;
             }
+
             if (ReferenceEquals(this, other))
             {
                 return true;

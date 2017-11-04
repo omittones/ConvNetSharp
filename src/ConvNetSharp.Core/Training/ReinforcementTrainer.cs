@@ -12,6 +12,7 @@ namespace ConvNetSharp.Core.Training
     {
         private readonly IReinforcementLayer<T> lossLayer;
         private readonly Random rnd;
+        private Volume<T> inputs;
 
         public ReinforcementTrainer(
             Net<T> net,
@@ -26,9 +27,15 @@ namespace ConvNetSharp.Core.Training
 
         public int[] Act(Volume<T> inputs)
         {
-            var output = this.Net.Forward(inputs, false);
-            var classCount = output.Shape.GetDimension(2);
+            this.inputs = inputs;
 
+            var output = this.Forward(inputs);
+
+            Debug.Assert(output.Width == 1);
+            Debug.Assert(output.Height == 1);
+            Debug.Assert(output.BatchSize == this.BatchSize);
+
+            var classCount = output.Depth;
             var values = new T[classCount];
             var prediction = new int[this.BatchSize];
             for (var n = 0; n < this.BatchSize; n++)
@@ -38,7 +45,7 @@ namespace ConvNetSharp.Core.Training
                     values[j] = Ops<T>.Add(values[j - 1], output.Get(0, 0, j, n));
                 for (var j = 0; j < classCount; j++)
                     values[j] = Ops<T>.Divide(values[j], values[classCount - 1]);
-                
+
                 var random = Ops<T>.Cast(rnd.NextDouble());
                 for (var j = 0; j < classCount; j++)
                     if (Ops<T>.GreaterThan(values[j], random))
@@ -51,15 +58,26 @@ namespace ConvNetSharp.Core.Training
             return prediction;
         }
 
-        public void Reinforce(Volume<T> inputs, int[] selectedActions, T[] loss)
+        public void Reinforce(int[] selectedActions, T[] loss)
         {
-            var outputs = this.Forward(inputs);
+            Debug.Assert(selectedActions.Length == loss.Length);
+            Debug.Assert(selectedActions.Length == this.inputs.BatchSize);
+
+            //Discount Returns r0 = (r0 + r1 * gamma + r2 * gamma^2 + r2 * gamma^3 ...)
+            //Advantage = Returns - baseline
 
             this.lossLayer.SetLoss(selectedActions, loss);
 
-            this.Backward(outputs);
+            //refit baseline to minimize Sum[(R - b)^2]
+            //var mean = averages.Average();
+            //averages = averages.Select(a => a - mean).ToArray();
+            //var stdev = averages.Select(a => a * a).Average();
+            //averages = averages.Select(a => a / stdev).ToArray();
 
-            var batchSize = inputs.Shape.GetDimension(3);
+            this.Backward(this.inputs);
+
+            var batchSize = selectedActions.Length;
+
             var chrono = Stopwatch.StartNew();
 
             //foreach (var prmtrs in this.Net.GetParametersAndGradients())

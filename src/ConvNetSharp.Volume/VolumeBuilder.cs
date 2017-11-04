@@ -8,6 +8,11 @@ namespace ConvNetSharp.Volume
     /// <typeparam name="T"></typeparam>
     public abstract class VolumeBuilder<T> where T : struct, IEquatable<T>, IFormattable
     {
+        public Volume<T> SameAs(params int[] dimensions)
+        {
+            return SameAs(Shape.From(dimensions));
+        }
+
         public abstract Volume<T> SameAs(Shape shape);
 
         public abstract Volume<T> SameAs(T[] value, Shape shape);

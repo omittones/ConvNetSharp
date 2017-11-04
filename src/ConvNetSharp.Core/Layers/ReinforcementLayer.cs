@@ -7,8 +7,8 @@ namespace ConvNetSharp.Core.Layers
         where T : struct, IEquatable<T>, IFormattable
     {
         private int classCount;
-        private T[] losses;
-        private int[] selectedActions;
+        private T[] rewards;
+        private int[] actionsTaken;
 
         public override void Init(int inputWidth, int inputHeight, int inputDepth)
         {
@@ -20,12 +20,33 @@ namespace ConvNetSharp.Core.Layers
             this.classCount = inputDepth;
         }
 
-        public void SetLoss(int[] selectedActions, T[] losses)
+        //def discount_rewards(r):
+        //""" take 1D float array of rewards and compute discounted reward """
+        //discounted_r = np.zeros_like(r)
+        //running_add = 0
+        //for t in reversed(xrange(0, r.size)):
+        //   running_add = running_add* gamma + r[t]
+        //   discounted_r[t] = running_add
+        //return discounted_r;
+
+        private T[] DiscountedRewards(T[] rewards, double gamma)
         {
-            this.losses = losses;
-            this.selectedActions = selectedActions;
-            var count = this.InputActivationGradients.Shape.GetDimension(3);
-            if (count != losses.Length)
+            T[] discounted = new T[rewards.Length];
+            T running = Ops<T>.Zero;
+            for (var i = rewards.Length - 1; i >= 0; i--)
+            {
+                running = Ops<T>.Multiply(running, Ops<T>.Cast(gamma));
+                running = Ops<T>.Add(running, rewards[i]);
+                discounted[i] = running;
+            }
+            return discounted;
+        }
+
+        public void SetLoss(int[] actionsTaken, T[] rewards)
+        {
+            this.rewards = rewards;
+            this.actionsTaken = actionsTaken;
+            if (this.InputActivationGradients.BatchSize != rewards.Length)
                 throw new NotSupportedException("Output vs loss does not match!");
         }
 
@@ -39,22 +60,28 @@ namespace ConvNetSharp.Core.Layers
             return base.Forward(isTraining);
         }
 
-        public override void Backward(Volume<T> y, out T loss)
+        public override void Backward(Volume<T> y, out T expectedReward)
         {
-            base.Backward(y, out loss);
+            var batches = this.OutputActivation.BatchSize;
 
-            var shape = this.OutputActivation.Shape;
-            var batches = shape.GetDimension(3);
-
-            loss = Ops<T>.Zero;
+            expectedReward = Ops<T>.Zero;
             this.InputActivationGradients.Clear();
             for (var batch = 0; batch < batches; batch++)
             {
-                //amount = Ops<T>.Negate(amount);
-                //var classProbability = this.OutputActivation.Get(0, 0, x, n);
-                var amount = losses[batch];
-                loss = Ops<T>.Add(loss, Ops<T>.Multiply(amount, amount));
-                this.InputActivationGradients.Set(0, 0, selectedActions[batch], batch, amount);
+                //var action = actionsTaken[batch];
+                for (var action = 0; action < this.classCount; action++)
+                {
+                    var policy = this.OutputActivation.Get(0, 0, action, batch);
+
+                    var reward = rewards[batch];
+                    expectedReward = Ops<T>.Add(expectedReward, Ops<T>.Multiply(reward, policy));
+
+                    var derivative = Ops<T>.Subtract(Ops<T>.One, policy);
+                    var advantageTimesDerivative = Ops<T>.Multiply(derivative, reward);
+                    //advantageTimesDerivative = Ops<T>.Negate(advantageTimesDerivative);
+
+                    this.InputActivationGradients.Set(0, 0, action, batch, advantageTimesDerivative);
+                }
             }
         }
     }
