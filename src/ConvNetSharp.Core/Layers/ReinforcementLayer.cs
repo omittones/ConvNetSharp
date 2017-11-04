@@ -11,8 +11,11 @@ namespace ConvNetSharp.Core.Layers
         private VolumeBuilder<double> build = BuilderInstance<double>.Volume;
 
         private int classCount;
-        private double[] rewards;
+        private double[] advantage;
         private int[][] pathActions;
+        private double[] returns;
+        private double baseline;
+        private Vol maxes;
 
         public override void Init(int inputWidth, int inputHeight, int inputDepth)
         {
@@ -29,8 +32,7 @@ namespace ConvNetSharp.Core.Layers
 
         public void MuPolicy(Vol input, Vol output)
         {
-            var maxes = build.SameAs(1, 1, 1, input.BatchSize);
-            input.DoMax(maxes);
+            input.DoMax(this.maxes);
             for (var bs = 0; bs < input.BatchSize; bs++)
             {
                 double expSum = 0;
@@ -51,8 +53,7 @@ namespace ConvNetSharp.Core.Layers
 
         public void LogMuPolicy(Vol input, Vol output)
         {
-            var maxes = build.SameAs(1, 1, 1, input.BatchSize);
-            input.DoMax(maxes);
+            input.DoMax(this.maxes);
             for (var bs = 0; bs < input.BatchSize; bs++)
             {
                 var max = maxes.Get(0, 0, 0, bs);
@@ -70,7 +71,7 @@ namespace ConvNetSharp.Core.Layers
             }
         }
 
-        public void GradientLogMuPolicy(Vol input, Vol mu, int action, int batch, Vol output)
+        public void GradientLogMuPolicy(Vol input, Vol mu, int action, double scaling, int batch, Vol output)
         {
             Debug.Assert(input.Depth == output.Depth);
             Debug.Assert(input.BatchSize == output.BatchSize);
@@ -78,18 +79,19 @@ namespace ConvNetSharp.Core.Layers
             for (var d = 0; d < input.Depth; d++)
             {
                 var flag = d == action ? 1.0 : 0.0;
-                output.Set(0, 0, d, batch, flag - mu.Get(0, 0, d, batch));
+                var gradient = flag - mu.Get(0, 0, d, batch);
+                output.Set(0, 0, d, batch, gradient * scaling);
             }
         }
 
-        public void PathLikelihoodRatio(Vol input, Vol mu, int[] actions, int startBatchIndex, Vol output)
+        public void PathLikelihoodRatio(Vol input, Vol mu, int[] actions, double scaling, int startBatchIndex, Vol output)
         {
             Debug.Assert(input.Depth == output.Depth);
             Debug.Assert(input.BatchSize == output.BatchSize);
 
             for (var i = 0; i < actions.Length; i++)
             {
-                GradientLogMuPolicy(input, mu, actions[i], startBatchIndex, output);
+                GradientLogMuPolicy(input, mu, actions[i], scaling, startBatchIndex, output);
                 startBatchIndex++;
             }
         }
@@ -99,46 +101,36 @@ namespace ConvNetSharp.Core.Layers
             Debug.Assert(input.BatchSize == pathActions.Sum(a => a.Length));
             Debug.Assert(pathActions.Length == rewards.Length);
 
-            var likelihood = build.SameAs(input.Shape);
-
             int batchIndexOfPath = 0;
             for (var i = 0; i < pathActions.Length; i++)
             {
-                likelihood.Clear();
-                PathLikelihoodRatio(input, mu, pathActions[i], batchIndexOfPath, likelihood);
-                likelihood.DoMultiply(likelihood, -rewards[i]);
-
-                likelihood.DoAdd(output, output);
+                PathLikelihoodRatio(input, mu, pathActions[i], rewards[i], batchIndexOfPath, output);
 
                 batchIndexOfPath += pathActions[i].Length;
             }
         }
 
-        //def discount_rewards(r):
-        //""" take 1D float array of rewards and compute discounted reward """
-        //discounted_r = np.zeros_like(r)
-        //running_add = 0
-        //for t in reversed(xrange(0, r.size)):
-        //   running_add = running_add* gamma + r[t]
-        //   discounted_r[t] = running_add
-        //return discounted_r;
-
-        private double[] DiscountedRewards(double[] rewards, double gamma)
+        public void SetReturns(int[][] pathActions, double[] returns, double baseline)
         {
-            double[] discounted = new double[rewards.Length];
-            double running = Ops<double>.Zero;
-            for (var i = rewards.Length - 1; i >= 0; i--)
+            if (this.advantage == null || this.advantage.Length != returns.Length)
+                this.advantage = new double[returns.Length];
+            this.returns = returns;
+            this.baseline = baseline;
+
+            //advantage = discounted returns - baseline
+            //normalize by stddev
+            double stddev = 0;
+            for (var i = 0; i < returns.Length; i++)
             {
-                running = Ops<double>.Multiply(running, Ops<double>.Cast(gamma));
-                running = Ops<double>.Add(running, rewards[i]);
-                discounted[i] = running;
+                var adv = Ops<double>.Subtract(returns[i], baseline);
+                stddev += (adv * adv) / returns.Length;
+                this.advantage[i] = adv;
             }
-            return discounted;
-        }
+            stddev = Ops<double>.Sqrt(stddev);
+            if (stddev != 0)
+                for (var i = 0; i < advantage.Length; i++)
+                    this.advantage[i] = this.advantage[i] / stddev;
 
-        public void SetLoss(int[][] pathActions, double[] rewards)
-        {
-            this.rewards = rewards;
             this.pathActions = pathActions;
 
             var totalBatchSize = this.pathActions.Sum(e => e.Length);
@@ -146,12 +138,15 @@ namespace ConvNetSharp.Core.Layers
             if (totalBatchSize != this.InputActivationGradients.BatchSize)
                 throw new NotSupportedException("Total number of actions must match batchSize!");
 
-            if (rewards.Length != pathActions.Length)
+            if (returns.Length != pathActions.Length)
                 throw new NotSupportedException("Number of paths and rewards must match!");
         }
 
         protected override Volume<double> Forward(Volume<double> input, bool isTraining = false)
         {
+            if (this.maxes == null || this.maxes.BatchSize != input.BatchSize)
+                this.maxes = build.SameAs(1, 1, 1, input.BatchSize);
+          
             MuPolicy(input, OutputActivation);
 
             return OutputActivation;
@@ -162,26 +157,28 @@ namespace ConvNetSharp.Core.Layers
             Backward(y, out var unused);
         }
 
-        public override void Backward(Volume<double> y, out double expectedReward)
+        public override void Backward(Volume<double> y, out double estimatedLoss)
         {
-            var batches = this.OutputActivation.BatchSize;
-
-            expectedReward = Ops<double>.Zero;
+            estimatedLoss = Ops<double>.Zero;
             int batch = 0;
-            for (var path = 0; path < this.rewards.Length; path++)
+            for (var path = 0; path < this.advantage.Length; path++)
             {
-                var likelihood = 1.0;
-                for (var action = 0; action < this.pathActions[path].Length; action++)
+                var nmActions = this.pathActions[path].Length;
+                for (var action = 0; action < nmActions; action++)
                 {
-                    likelihood *= OutputActivation.Get(0, 0, this.pathActions[path][action], batch);
+                    var expectation = OutputActivation.Get(0, 0, this.pathActions[path][action], batch) * returns[path];
+                    estimatedLoss -= expectation;
                     batch++;
                 }
-                expectedReward = Ops<double>.Add(expectedReward, likelihood * rewards[path]);
             }
 
             this.InputActivationGradients.Clear();
 
-            PolicyGradient(this.InputActivation, this.OutputActivation, this.pathActions, this.rewards, this.InputActivationGradients);
+            PolicyGradient(this.InputActivation, this.OutputActivation, this.pathActions, this.advantage, this.InputActivationGradients);
+
+            this.InputActivationGradients.DoNegate(this.InputActivationGradients);
+
+            Ops<double>.Validate(this.InputActivationGradients);
         }
     }
 }

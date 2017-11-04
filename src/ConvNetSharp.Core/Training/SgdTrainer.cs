@@ -71,6 +71,10 @@ namespace ConvNetSharp.Core.Training
                 var parametersAndGradient = parametersAndGradients[i];
                 var parameters = parametersAndGradient.Volume;
                 var gradients = parametersAndGradient.Gradient;
+
+                Ops<T>.Validate(parameters);
+                Ops<T>.Validate(gradients);
+
                 var delta = this.deltas[i];
                 var regularizationGradients = this.regGrads[i];
                 var velocity = this.velocities[i];

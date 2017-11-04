@@ -201,8 +201,7 @@ namespace ConvNetSharp.Volume.Double
             }
             else
             {
-                //Todo: broadcast
-                throw new NotImplementedException();
+                this.Storage.MapEx((l, r) => l / r, other.Storage, result.Storage);
             }
         }
 
