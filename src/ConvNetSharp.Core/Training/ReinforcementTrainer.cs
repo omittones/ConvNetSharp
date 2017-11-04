@@ -9,7 +9,8 @@ namespace ConvNetSharp.Core.Training
     public class ReinforcementTrainer<T> : SgdTrainer<T>
         where T : struct, IEquatable<T>, IFormattable
     {
-        public T Baseline { get; private set; } 
+        public T Baseline { get; private set; }
+        public T RewardDiscountGamma { get; set; }
         public T EstimatedRewards => Ops<T>.Negate(this.Loss);
 
         private readonly IReinforcementLayer<T> finalLayer;
@@ -25,6 +26,7 @@ namespace ConvNetSharp.Core.Training
 
             this.rnd = rnd;
             this.Baseline = Ops<T>.Zero;
+            this.RewardDiscountGamma = Ops<T>.Zero;
         }
 
         public int[] Act(Volume<T> inputs)
@@ -51,37 +53,22 @@ namespace ConvNetSharp.Core.Training
             return prediction;
         }
         
-        private double[] DiscountedRewards(double[] rewards, double gamma)
-        {
-            double[] discounted = new double[rewards.Length];
-            double running = Ops<double>.Zero;
-            for (var i = rewards.Length - 1; i >= 0; i--)
-            {
-                running = Ops<double>.Multiply(running, Ops<double>.Cast(gamma));
-                running = Ops<double>.Add(running, rewards[i]);
-                discounted[i] = running;
-            }
-            return discounted;
-        }
-
         public override void Train(Volume<T> x, Volume<T> y)
         {
             throw new NotSupportedException("Use Reinforce method instead!");
         }
 
-        public void Reinforce(Volume<T> pathInputs, int[][] pathActions, T[] rewards)
+        public void Reinforce(Volume<T> pathInputs, int[][] pathActions, T[] pathReturns)
         {
             this.Forward(pathInputs);
 
-            //discounted returns r0 = (r0 + r1 * gamma + r2 * gamma^2 + r2 * gamma^3 ...)
-
-            this.finalLayer.SetReturns(pathActions, rewards, this.Baseline);
+            this.finalLayer.SetReturns(pathActions, pathReturns, this.Baseline, this.RewardDiscountGamma);
 
             //refit baseline to minimize Sum[(R - b)^2]
             Baseline = Ops<T>.Zero;
-            for (var i = 0; i < rewards.Length; i++)
-                Baseline = Ops<T>.Add(rewards[i], Baseline);
-            Baseline = Ops<T>.Divide(Baseline, Ops<T>.Cast(rewards.Length));
+            for (var i = 0; i < pathReturns.Length; i++)
+                Baseline = Ops<T>.Add(pathReturns[i], Baseline);
+            Baseline = Ops<T>.Divide(Baseline, Ops<T>.Cast(pathReturns.Length));
  
             //var mean = averages.Average();
             //averages = averages.Select(a => a - mean).ToArray();

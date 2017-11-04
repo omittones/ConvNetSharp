@@ -13,6 +13,7 @@ namespace ConvNetSharp.Core.Layers
         private int classCount;
         private double[] advantage;
         private int[][] pathActions;
+        private double gamma;
         private double[] returns;
         private double baseline;
         private Vol maxes;
@@ -84,33 +85,48 @@ namespace ConvNetSharp.Core.Layers
             }
         }
 
-        public void PathLikelihoodRatio(Vol input, Vol mu, int[] actions, double scaling, int startBatchIndex, Vol output)
+        public void PathLikelihoodRatio(Vol input, Vol mu, int[] actions, double[] scaling, int startBatchIndex, Vol output)
         {
             Debug.Assert(input.Depth == output.Depth);
             Debug.Assert(input.BatchSize == output.BatchSize);
 
             for (var i = 0; i < actions.Length; i++)
             {
-                GradientLogMuPolicy(input, mu, actions[i], scaling, startBatchIndex, output);
+                GradientLogMuPolicy(input, mu, actions[i], scaling[i], startBatchIndex, output);
                 startBatchIndex++;
             }
         }
 
-        public void PolicyGradient(Vol input, Vol mu, int[][] pathActions, double[] rewards, Vol output)
+        public void PolicyGradient(Vol input, Vol mu, int[][] pathActions, double[] pathReturns, Vol output)
         {
             Debug.Assert(input.BatchSize == pathActions.Sum(a => a.Length));
-            Debug.Assert(pathActions.Length == rewards.Length);
+            Debug.Assert(pathActions.Length == pathReturns.Length);
 
             int batchIndexOfPath = 0;
             for (var i = 0; i < pathActions.Length; i++)
             {
-                PathLikelihoodRatio(input, mu, pathActions[i], rewards[i], batchIndexOfPath, output);
+                var tdRewards = TimeDiscountedRewards(pathActions[i].Length, pathReturns[i]);
+
+                PathLikelihoodRatio(input, mu, pathActions[i], tdRewards, batchIndexOfPath, output);
 
                 batchIndexOfPath += pathActions[i].Length;
             }
         }
 
-        public void SetReturns(int[][] pathActions, double[] returns, double baseline)
+        private double[] TimeDiscountedRewards(int length, double pathReturn)
+        {
+            double[] discounted = new double[length];
+            double running = Ops<double>.Zero;
+            for (var i = length - 1; i >= 0; i--)
+            {
+                running = Ops<double>.Multiply(running, gamma);
+                running = Ops<double>.Add(running, pathReturn);
+                discounted[i] = running;
+            }
+            return discounted;
+        }
+
+        public void SetReturns(int[][] pathActions, double[] returns, double baseline, double gamma)
         {
             if (this.advantage == null || this.advantage.Length != returns.Length)
                 this.advantage = new double[returns.Length];
@@ -133,6 +149,8 @@ namespace ConvNetSharp.Core.Layers
 
             this.pathActions = pathActions;
 
+            this.gamma = gamma;
+
             var totalBatchSize = this.pathActions.Sum(e => e.Length);
 
             if (totalBatchSize != this.InputActivationGradients.BatchSize)
@@ -146,7 +164,7 @@ namespace ConvNetSharp.Core.Layers
         {
             if (this.maxes == null || this.maxes.BatchSize != input.BatchSize)
                 this.maxes = build.SameAs(1, 1, 1, input.BatchSize);
-          
+
             MuPolicy(input, OutputActivation);
 
             return OutputActivation;
