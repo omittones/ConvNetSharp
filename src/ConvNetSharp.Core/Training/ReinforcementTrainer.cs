@@ -14,17 +14,13 @@ namespace ConvNetSharp.Core.Training
         public double EstimatedRewards => Ops<double>.Negate(this.Loss);
 
         private readonly IReinforcementLayer<double> finalLayer;
-        private readonly Random rnd;
 
-        public ReinforcementTrainer(
-            Net<double> net,
-            Random rnd) : base(net)
+        public ReinforcementTrainer(Net<double> net) : base(net)
         {
             this.finalLayer = net.Layers
                 .OfType<IReinforcementLayer<double>>()
                 .FirstOrDefault();
 
-            this.rnd = rnd;
             this.Baseline = Ops<double>.Zero;
             this.RewardDiscountGamma = Ops<double>.Zero;
             this.ApplyBaselineAndNormalizeReturns = true;
@@ -36,12 +32,11 @@ namespace ConvNetSharp.Core.Training
 
             Debug.Assert(output.Width == 1);
             Debug.Assert(output.Height == 1);
-            Debug.Assert(output.BatchSize == this.BatchSize);
 
             var classCount = output.Depth;
             var values = new double[classCount];
-            var prediction = new int[this.BatchSize];
-            for (var n = 0; n < this.BatchSize; n++)
+            var prediction = new int[inputs.BatchSize];
+            for (var n = 0; n < inputs.BatchSize; n++)
             {
 
                 int max = 0;
@@ -61,6 +56,9 @@ namespace ConvNetSharp.Core.Training
 
         public void Reinforce(Volume<double> pathInputs, int[][] pathActions, double[] pathReturns)
         {
+            if (this.BatchSize != pathInputs.BatchSize)
+                throw new NotSupportedException("Mismatching sizes!");
+
             this.Forward(pathInputs);
 
             if (ApplyBaselineAndNormalizeReturns)

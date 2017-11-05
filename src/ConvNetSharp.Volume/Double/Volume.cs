@@ -12,18 +12,18 @@ namespace ConvNetSharp.Volume.Double
         {
         }
 
-        public override void DoActivation(Volume<double> volume, ActivationType type)
+        public override void DoActivation(Volume<double> result, ActivationType type)
         {
             switch (type)
             {
                 case ActivationType.Sigmoid:
-                    this.Storage.Map(x => 1.0 / (1.0 + Math.Exp(-x)), volume.Storage);
+                    this.DoSigmoid(result);
                     return;
                 case ActivationType.Relu:
-                    this.DoRelu(volume);
+                    this.DoRelu(result);
                     break;
                 case ActivationType.Tanh:
-                    this.Storage.Map(Math.Tanh, volume.Storage);
+                    this.DoTanh(result);
                     break;
                 case ActivationType.ClippedRelu:
                     throw new NotImplementedException();
@@ -36,7 +36,7 @@ namespace ConvNetSharp.Volume.Double
             switch (type)
             {
                 case ActivationType.Sigmoid:
-                    this.Storage.Map((output, outGradient) => output * (1.0 - output) * outGradient, outputGradient.Storage,
+                    Storage.Map((output, outGradient) => output * (1.0 - output) * outGradient, outputGradient.Storage,
                         result.Storage);
                     return;
                 case ActivationType.Relu:
@@ -259,9 +259,9 @@ namespace ConvNetSharp.Volume.Double
             this.Storage.Map(Math.Exp, result.Storage);
         }
 
-        public override void DoLeakyRelu(Volume<double> volume)
+        public override void DoLeakyRelu(Volume<double> result)
         {
-            this.Storage.Map(x => x <= 0 ? 0.01 * x : x, volume.Storage);
+            this.Storage.Map(x => x <= 0 ? 0.01 * x : x, result.Storage);
         }
 
         public override void DoLeakyReluGradient(Volume<double> input, Volume<double> output, Volume<double> result)
@@ -476,27 +476,25 @@ namespace ConvNetSharp.Volume.Double
             }
         }
 
-        public override void DoRelu(Volume<double> volume)
+        public override void DoRelu(Volume<double> result)
         {
-            this.Storage.Map(x => x <= 0 ? 0 : x, volume.Storage);
+            this.Storage.Map(x => x <= 0 ? 0 : x, result.Storage);
         }
 
-        public override void DoReluGradient(Volume<double> input, Volume<double> outputGradient,
-            Volume<double> inputGradient)
+        public override void DoReluGradient(Volume<double> input, Volume<double> outputGradient, Volume<double> result)
         {
-            this.Storage.Map((x, y) => x > 0 ? y : 0, outputGradient.Storage, inputGradient.Storage);
+            this.Storage.Map((x, y) => x > 0 ? y : 0, outputGradient.Storage, result.Storage);
         }
 
-        public override void DoSigmoid(Volume<double> volume)
+        public override void DoSigmoid(Volume<double> result)
         {
-            this.Storage.Map(x => 1.0 / (1.0 + Math.Exp(-x)), volume.Storage);
+            this.Storage.Map(x => 1.0 / (1.0 + Math.Exp(-x)), result.Storage);
         }
 
-        public override void DoSigmoidGradient(Volume<double> input, Volume<double> outputGradient,
-            Volume<double> inputGradient)
+        public override void DoSigmoidGradient(Volume<double> input, Volume<double> outputGradient, Volume<double> result)
         {
             this.Storage.Map((output, outGradient) => output * (1.0 - output) * outGradient, outputGradient.Storage,
-                inputGradient.Storage);
+                result.Storage);
         }
 
         public override void DoSoftmax(Volume<double> result)
@@ -560,15 +558,15 @@ namespace ConvNetSharp.Volume.Double
             }
         }
 
-        public override void DoSoftmaxGradient(Volume<double> outputGradient, Volume<double> inputGradient)
+        public override void DoSoftmaxGradient(Volume<double> outputGradient, Volume<double> result)
         {
             var batchSize = this.Shape.TotalLength == 1 ? 1 : this.Shape.GetDimension(-1);
 
-            var outputReshape = this.ReShape(-1, batchSize);
+            var inputReshape = this.ReShape(-1, batchSize);
             var outputGradientReshape = outputGradient.ReShape(-1, batchSize);
-            var inputGradientReshape = inputGradient.ReShape(-1, batchSize);
+            var resultReshape = result.ReShape(-1, batchSize);
 
-            var firstDim = outputReshape.Shape.GetDimension(0);
+            var firstDim = inputReshape.Shape.GetDimension(0);
 
             for (var b = 0; b < batchSize; b++)
             {
@@ -584,22 +582,21 @@ namespace ConvNetSharp.Volume.Double
                     }
                 }
 
-                var pj = outputReshape.Get(classIndex, b);
+                var pj = inputReshape.Get(classIndex, b);
 
-                // input gradient:
-                // pi(1 - pi) if i = class index
-                // -pipj if i != class index
+                //input gradient:
+                //pi(1 - pi) if i = class index
+                //-pipj if i != class index
                 for (var i = 0; i < firstDim; i++)
                 {
-                    var pi = outputReshape.Get(i, b);
-
+                    var pi = inputReshape.Get(i, b);
                     if (i == classIndex)
                     {
-                        inputGradientReshape.Set(i, b, pj * (1.0 - pj));
+                        resultReshape.Set(i, b, pj * (1.0 - pj));
                     }
                     else
                     {
-                        inputGradientReshape.Set(i, b, -pj * pi);
+                        resultReshape.Set(i, b, -pj * pi);
                     }
                 }
             }
@@ -666,16 +663,14 @@ namespace ConvNetSharp.Volume.Double
             }
         }
 
-        public override void DoTanh(Volume<double> volume)
+        public override void DoTanh(Volume<double> result)
         {
-            this.Storage.Map(Math.Tanh, volume.Storage);
+            this.Storage.Map(Math.Tanh, result.Storage);
         }
 
-        public override void DoTanhGradient(Volume<double> input, Volume<double> outputGradient,
-            Volume<double> inputGradient)
+        public override void DoTanhGradient(Volume<double> input, Volume<double> outputGradient, Volume<double> result)
         {
-            this.Storage.Map((output, outGradient) => (1.0 - output * output) * outGradient, outputGradient.Storage,
-                inputGradient.Storage);
+            this.Storage.Map((output, outGradient) => (1.0 - output * output) * outGradient, outputGradient.Storage, result.Storage);
         }
     }
 }
