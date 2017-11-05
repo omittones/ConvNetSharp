@@ -22,5 +22,14 @@ namespace ConvNetSharp.Core.Layers
 
             return this.OutputActivation;
         }
+
+        public override void Init(int inputWidth, int inputHeight, int inputDepth)
+        {
+            base.Init(inputWidth, inputHeight, inputDepth);
+
+            this.OutputDepth = inputDepth;
+            this.OutputWidth = inputWidth;
+            this.OutputHeight = inputHeight;
+        }
     }
 }
