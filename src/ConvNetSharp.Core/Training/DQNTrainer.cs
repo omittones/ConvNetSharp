@@ -4,7 +4,7 @@ using ConvNetSharp.Volume;
 
 namespace ConvNetSharp.Core.Training
 {
-    public class DQNTrainer
+    public class DQNTrainer : SgdTrainer<double>
     {
         private readonly Random rnd;
         private readonly int nmActions;
@@ -12,13 +12,11 @@ namespace ConvNetSharp.Core.Training
         private readonly Experiences replayMemory;
 
         public int Samples { get; private set; }
-        public double Loss { get; private set; }
         public double QValue { get; private set; }
         public int ReplayMemoryCount => replayMemory.Count;
 
         public double Gamma { get; set; }
         public double Epsilon { get; set; }
-        public double Alpha { get; set; }
         public int ReplaySkipCount { get; set; }
         public int ReplaysPerIteration { get; set; }
         public double ClampErrorTo { get; set; }
@@ -37,14 +35,14 @@ namespace ConvNetSharp.Core.Training
 
         public DQNTrainer(
             Net<double> net,
-            int nmActions)
+            int nmActions) : base(net)
         {
             this.rnd = new Random(DateTime.Now.Millisecond);
             this.replayMemory = new Experiences();
 
             this.Gamma = 0.75; // future reward discount factor
             this.Epsilon = 0.1; // for epsilon-greedy policy
-            this.Alpha = 0.01; // value function learning rate
+            this.LearningRate = 0.01; // value function learning rate
             this.ReplaySkipCount = 25; // number of time steps before we add another experience to replay memory
             this.ReplayMemorySize = 5000; // size of experience replay
             this.ReplayMemoryDiscardStrategy = ExperienceDiscardStrategy.First;
@@ -94,7 +92,7 @@ namespace ConvNetSharp.Core.Training
             this.QValue = double.MinValue;
 
             // perform an update on Q function
-            if (this.Alpha > 0)
+            if (this.LearningRate > 0)
             {
                 // learn from this tuple to get a sense of how "surprising" it is to the agent
                 var xp = Experience.New(action.State, action.Decision, reward, (double[])nextState.Clone());
@@ -133,23 +131,25 @@ namespace ConvNetSharp.Core.Training
 
         private double learnFromExperience(Volume<double> s0, int a0, double r0, Volume<double> s1)
         {
+            this.BatchSize = 1;
+
             // want: Q(s,a) = r + gamma * max_a' Q(s',a')
             // compute the target Q value (current reward + gamma * next reward)
-            var qmax = r0;
             if (Gamma != 0)
             {
                 var a1vol = this.net.Forward(s1, false);
                 var a1val = a1vol.IndexOfMax();
-                qmax += this.Gamma * a1vol.Get(0, 0, a1val, 0);
+                var r1 = a1vol.Get(0, 0, a1val, 0);
+                r0 += this.Gamma * r1;
             }
-
-            if (this.QValue < qmax)
-                this.QValue = qmax;
+            
+            if (this.QValue == double.MinValue)
+                this.QValue = r0;
 
             // now predict
-            var expected = this.net.Forward(s0, true).Clone();
+            var expected = this.Forward(s0).Clone();
             var a0val = expected.Get(0, 0, a0, 0);
-            var error = a0val - qmax;
+            var error = a0val - r0;
 
             // huber loss to robustify
             var clampedError = error;
@@ -162,22 +162,22 @@ namespace ConvNetSharp.Core.Training
             expected.Set(0, 0, a0, 0, a0val - clampedError);
 
             //propagate errors
-            this.net.Backward(expected); // compute gradients on net params
+            this.Backward(expected); // compute gradients on net params
 
-            // update net
-            this.updateNet(this.net, this.Alpha);
+            //this.updateNet(net, this.LearningRate);
+            TrainImplem();
 
             return Math.Abs(error);
         }
 
-        private void updateNet(INet<double> net, double alpha)
-        {
-            foreach (var pandg in net.GetParametersAndGradients())
-            {
-                pandg.Gradient.DoMultiply(pandg.Gradient, -alpha);
-                pandg.Volume.DoAdd(pandg.Gradient, pandg.Volume);
-                pandg.Gradient.Clear();
-            }
-        }
+        //private void updateNet(INet<double> net, double alpha)
+        //{
+        //    foreach (var pandg in net.GetParametersAndGradients())
+        //    {
+        //        pandg.Gradient.DoMultiply(pandg.Gradient, -alpha);
+        //        pandg.Volume.DoAdd(pandg.Gradient, pandg.Volume);
+        //        pandg.Gradient.Clear();
+        //    }
+        //}
     }
 }
