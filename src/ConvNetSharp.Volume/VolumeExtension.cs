@@ -5,11 +5,11 @@ namespace ConvNetSharp.Volume
 {
     public static class VolumeExtension
     {
-        public static int IndexOfMax(this Volume<double> output)
+        public static int IndexOfMax(this Volume<double> output, int batch = 0)
         {
             int a = 0;
             for (var i = 1; i < output.Shape.GetDimension(2); i++)
-                if (output.Get(0, 0, i, 0) > output.Get(0, 0, a, 0))
+                if (output.Get(0, 0, i, batch) > output.Get(0, 0, a, batch))
                     a = i;
             return a;
         }
