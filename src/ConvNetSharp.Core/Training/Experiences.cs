@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ConvNetSharp.Core.Training
 {
@@ -37,12 +38,32 @@ namespace ConvNetSharp.Core.Training
                     if (indexOfNext == this.inner.Count)
                         indexOfNext = 0;
                 }
-                else
+                else if (DiscardStrategy == ExperienceDiscardStrategy.BestReward)
                 {
-                    if (DiscardStrategy == ExperienceDiscardStrategy.BestReward)
-                        this.inner[indexOfBest] = experience;
-                    else if (DiscardStrategy == ExperienceDiscardStrategy.WorstReward)
-                        this.inner[indexOfWorst] = experience;
+                    this.inner[indexOfBest] = experience;
+                    RebuildIndexes();
+
+                }
+                else if (DiscardStrategy == ExperienceDiscardStrategy.WorstReward)
+                {
+                    this.inner[indexOfWorst] = experience;
+                    RebuildIndexes();
+                }
+                else if (DiscardStrategy == ExperienceDiscardStrategy.AverageReward)
+                {
+                    var mean = inner.Average(e => e.reward);
+                    var minDeviation = double.MaxValue;
+                    int mostAverage = 0;
+                    for (var i = 0; i < inner.Count; i++)
+                    {
+                        var deviation = Math.Abs(inner[i].reward - mean);
+                        if (deviation < minDeviation)
+                        {
+                            minDeviation = deviation;
+                            mostAverage = i;
+                        }
+                    }
+                    inner[mostAverage] = experience;
                     RebuildIndexes();
                 }
             }

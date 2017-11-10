@@ -4,6 +4,7 @@
     {
         First,
         WorstReward,
-        BestReward        
+        BestReward,
+        AverageReward
     }
 }

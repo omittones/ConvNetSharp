@@ -67,27 +67,27 @@ namespace ConvNetSharp.Core.Training
             this.replayMemory.Clear();
         }
 
-        public Action Act(double[] state)
+        public Decision Act(double[] state)
         {
-            var action = new Action();
+            var action = new Decision();
             action.State = (double[])state.Clone();
 
             // epsilon greedy policy
             if (rnd.NextDouble() < this.Epsilon)
             {
-                action.Decision = rnd.Next(0, this.nmActions);
+                action.Action = rnd.Next(0, this.nmActions);
             }
             else
             {
                 // greedy wrt Q function
                 var output = this.net.Forward(action.State, false);
-                action.Decision = output.IndexOfMax();
+                action.Action = output.IndexOfMax();
             }
             
             return action;
         }
 
-        public double Learn(Action action, double[] nextState, double reward)
+        public double Learn(Decision decision, double[] nextState, double reward)
         {
             this.QValue = double.MinValue;
 
@@ -95,7 +95,7 @@ namespace ConvNetSharp.Core.Training
             if (this.LearningRate > 0)
             {
                 // learn from this tuple to get a sense of how "surprising" it is to the agent
-                var xp = Experience.New(action.State, action.Decision, reward, (double[])nextState.Clone());
+                var xp = Experience.New(decision.State, decision.Action, reward, (double[])nextState.Clone());
                 this.Loss = learnFromExperience(xp.state, xp.actionTaken, xp.reward, xp.nextState);
 
                 // decide if we should keep this experience in the replay
@@ -129,7 +129,7 @@ namespace ConvNetSharp.Core.Training
             return this.Loss;
         }
 
-        private double learnFromExperience(Volume<double> s0, int a0, double r0, Volume<double> s1)
+        private double learnFromExperience(double[] s0, int a0, double r0, double[] s1)
         {
             this.BatchSize = 1;
 
@@ -164,20 +164,9 @@ namespace ConvNetSharp.Core.Training
             //propagate errors
             this.Backward(expected); // compute gradients on net params
 
-            //this.updateNet(net, this.LearningRate);
             TrainImplem();
 
             return Math.Abs(error);
         }
-
-        //private void updateNet(INet<double> net, double alpha)
-        //{
-        //    foreach (var pandg in net.GetParametersAndGradients())
-        //    {
-        //        pandg.Gradient.DoMultiply(pandg.Gradient, -alpha);
-        //        pandg.Volume.DoAdd(pandg.Gradient, pandg.Volume);
-        //        pandg.Gradient.Clear();
-        //    }
-        //}
     }
 }

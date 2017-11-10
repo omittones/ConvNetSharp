@@ -1,8 +1,8 @@
 ﻿namespace ConvNetSharp.Core.Training
 {
-    public struct Action
+    public struct Decision
     {
         public double[] State;
-        public int Decision;
+        public int Action;
     }
 }

@@ -1,4 +1,7 @@
-﻿namespace ConvNetSharp.Core.Training
+﻿using ConvNetSharp.Core.Serialization;
+using System.Linq;
+
+namespace ConvNetSharp.Core.Training
 {
     internal class Experience
     {
@@ -20,7 +23,7 @@
 
         public override string ToString()
         {
-            return $"reward({actionTaken}) == {reward:0.0000}";
+            return $"({state.ToHumanString("{0:0.000}")},{actionTaken}) -> ({nextState.ToHumanString("{0:0.000}")}) with reward({reward:0.0000})";
         }
     }
 }

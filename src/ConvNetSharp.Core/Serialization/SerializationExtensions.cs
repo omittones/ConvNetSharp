@@ -3,11 +3,27 @@ using System.Linq;
 using ConvNetSharp.Core.Layers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 
 namespace ConvNetSharp.Core.Serialization
 {
     public static class SerializationExtensions
     {
+        public static string ToHumanString<T>(this T[] items, string itemFormat)
+        {
+            Func<IEnumerable<T>, string> render = subset => string.Join(", ", subset.Select(i => string.Format(itemFormat, i)));
+            if (items.Length > 12)
+            {
+                var head = items.Take(5);
+                var tail = items.Skip(items.Length - 5);
+                return $"[{render(head)} ... {render(tail)}]";
+            }
+            else
+            {
+                return $"[{render(items)}]";
+            }
+        }
+
         public static Net<T> FromJson<T>(string json) where T : struct, IEquatable<T>, IFormattable
         {
             var data = JsonConvert.DeserializeObject<JObject>(json);

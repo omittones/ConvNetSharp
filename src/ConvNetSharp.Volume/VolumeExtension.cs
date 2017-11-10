@@ -7,11 +7,11 @@ namespace ConvNetSharp.Volume
     {
         public static int IndexOfMax(this Volume<double> output, int batch = 0)
         {
-            int a = 0;
-            for (var i = 1; i < output.Shape.GetDimension(2); i++)
-                if (output.Get(0, 0, i, batch) > output.Get(0, 0, a, batch))
-                    a = i;
-            return a;
+            int max = 0;
+            for (var test = 1; test < output.Depth; test++)
+                if (output.Get(0, 0, test, batch) > output.Get(0, 0, max, batch))
+                    max = test;
+            return max;
         }
 
         public static void BatchIntoVolume(
