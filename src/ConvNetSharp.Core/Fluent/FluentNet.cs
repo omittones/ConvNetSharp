@@ -8,6 +8,7 @@ namespace ConvNetSharp.Core.Fluent
     public class FluentNet<T> : INet<T> where T : struct, IEquatable<T>, IFormattable
     {
         private readonly LastLayerBase<T> _lastLayer;
+
         readonly List<LayerBase<T>> _allLayers = new List<LayerBase<T>>();
 
         public FluentNet(LastLayerBase<T> layer)

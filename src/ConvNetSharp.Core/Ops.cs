@@ -36,18 +36,27 @@ namespace ConvNetSharp.Core
 
         public static readonly Func<T, bool> IsInvalid;
 
+        public static bool SkipValidation { get; set; }
+
         public static void Validate(Volume<T> volume)
         {
-#if DEBUG
-            var items = volume.Storage.ToArray();
-            for (var i = 0; i < items.Length; i++)
-                if (IsInvalid(items[i]))
-                    throw new ArgumentException("Invalid input!");
-#endif
+            if (!SkipValidation)
+            {
+                var items = volume.Storage.ToArray();
+                for (var i = 0; i < items.Length; i++)
+                    if (IsInvalid(items[i]))
+                        throw new ArgumentException("Invalid input!");
+            }
         }
 
         static Ops()
         {
+#if DEBUG
+            SkipValidation = false;
+#else
+            SkipValidation = true;
+#endif
+
             var firstOperand = Expression.Parameter(typeof(T), "x");
             var secondOperand = Expression.Parameter(typeof(T), "y");
 

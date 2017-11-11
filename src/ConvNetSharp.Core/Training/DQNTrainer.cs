@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using ConvNetSharp.Volume;
+using System.Diagnostics;
+using System.Linq;
 
 namespace ConvNetSharp.Core.Training
 {
@@ -20,6 +22,28 @@ namespace ConvNetSharp.Core.Training
         public int ReplaySkipCount { get; set; }
         public int ReplaysPerIteration { get; set; }
         public double ClampErrorTo { get; set; }
+        public double? MaxQValue { get; set; }
+        public double? MinQValue { get; set; }
+
+        public static double TheoreticalMaxQValue(double gamma, double maxReward)
+        {
+            if (gamma >= 1.0)
+                return double.PositiveInfinity;
+            var max = maxReward / (1.0 - gamma);
+            if (max < 0)
+                max = 0;
+            return max;
+        }
+
+        public static double TheoreticalMinQValue(double gamma, double minReward)
+        {
+            if (gamma >= 1.0)
+                return double.NegativeInfinity;
+            var min = minReward / (1.0 - gamma);
+            if (min > 0)
+                min = 0;
+            return min;
+        }
 
         public int ReplayMemorySize
         {
@@ -40,14 +64,14 @@ namespace ConvNetSharp.Core.Training
             this.rnd = new Random(DateTime.Now.Millisecond);
             this.replayMemory = new Experiences();
 
-            this.Gamma = 0.75; // future reward discount factor
-            this.Epsilon = 0.1; // for epsilon-greedy policy
             this.LearningRate = 0.01; // value function learning rate
+            this.Epsilon = 0.1; // for epsilon-greedy policy
+            this.Gamma = 0.75; // future reward discount factor
             this.ReplaySkipCount = 25; // number of time steps before we add another experience to replay memory
             this.ReplayMemorySize = 5000; // size of experience replay
             this.ReplayMemoryDiscardStrategy = ExperienceDiscardStrategy.First;
-            this.ReplaysPerIteration = 10;
-            this.ClampErrorTo = 1.0;
+            this.ReplaysPerIteration = 100;
+            this.ClampErrorTo = double.MaxValue;
 
             this.nmActions = nmActions;
 
@@ -60,10 +84,6 @@ namespace ConvNetSharp.Core.Training
         {
             this.Loss = 0;
             this.Samples = 0;
-
-            // nets are hardcoded for now as key (str) -> Mat
-            // not proud of this. better solution is to have a whole Net object
-            // on top of Mats, but for now sticking with this
             this.replayMemory.Clear();
         }
 
@@ -83,7 +103,7 @@ namespace ConvNetSharp.Core.Training
                 var output = this.net.Forward(action.State, false);
                 action.Action = output.IndexOfMax();
             }
-            
+
             return action;
         }
 
@@ -129,6 +149,17 @@ namespace ConvNetSharp.Core.Training
             return this.Loss;
         }
 
+        private double adjustQValuePerSettings(double value)
+        {
+            if (this.MaxQValue.HasValue && value > this.MaxQValue)
+                value = this.MaxQValue.Value;
+
+            if (this.MinQValue.HasValue && value < this.MinQValue)
+                value = this.MinQValue.Value;
+
+            return value;
+        }
+
         private double learnFromExperience(double[] s0, int a0, double r0, double[] s1)
         {
             this.BatchSize = 1;
@@ -140,15 +171,21 @@ namespace ConvNetSharp.Core.Training
                 var a1vol = this.net.Forward(s1, false);
                 var a1val = a1vol.IndexOfMax();
                 var r1 = a1vol.Get(0, 0, a1val, 0);
+
+                r1 = adjustQValuePerSettings(r1);
+
                 r0 += this.Gamma * r1;
             }
-            
+
             if (this.QValue == double.MinValue)
                 this.QValue = r0;
 
             // now predict
             var expected = this.Forward(s0).Clone();
             var a0val = expected.Get(0, 0, a0, 0);
+
+            a0val = adjustQValuePerSettings(a0val);
+
             var error = a0val - r0;
 
             // huber loss to robustify
