@@ -14,7 +14,7 @@ namespace ConvNetSharp.Core.Tests
             var net = new Net<T>();
             net.AddLayer(new InputLayer<T>(3, 3, 3));
             net.AddLayer(new FullyConnLayer<T>(3));
-            net.AddLayer(new SoftmaxLayer<T>(3));
+            net.AddLayer(new SoftmaxLayer<T>());
 
             GradientCheckTools.CheckGradientOnNet(net, epsilon: Epsilon);
         }
@@ -26,7 +26,7 @@ namespace ConvNetSharp.Core.Tests
             net.AddLayer(new FullyConnLayer<T>(10));
             net.AddLayer(new ReluLayer<T>());
             net.AddLayer(new FullyConnLayer<T>(5));
-            net.AddLayer(new SoftmaxLayer<T>(5));
+            net.AddLayer(new SoftmaxLayer<T>());
 
             GradientCheckTools.CheckGradientOnNet(net, epsilon: Epsilon);
         }

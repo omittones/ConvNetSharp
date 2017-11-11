@@ -51,12 +51,12 @@ namespace ConvNetSharp.Core.Training
                 }
                 else if (DiscardStrategy == ExperienceDiscardStrategy.AverageReward)
                 {
-                    var mean = inner.Average(e => e.reward);
+                    var mean = inner.Average(e => e.Reward);
                     var minDeviation = double.MaxValue;
                     int mostAverage = 0;
                     for (var i = 0; i < inner.Count; i++)
                     {
-                        var deviation = Math.Abs(inner[i].reward - mean);
+                        var deviation = Math.Abs(inner[i].Reward - mean);
                         if (deviation < minDeviation)
                         {
                             minDeviation = deviation;
@@ -71,9 +71,9 @@ namespace ConvNetSharp.Core.Training
             {
                 this.inner.Add(experience);
 
-                if (this.inner[indexOfWorst].reward > experience.reward)
+                if (this.inner[indexOfWorst].Reward > experience.Reward)
                     indexOfWorst = this.inner.Count - 1;
-                if (this.inner[indexOfBest].reward < experience.reward)
+                if (this.inner[indexOfBest].Reward < experience.Reward)
                     indexOfBest = this.inner.Count - 1;
             }
         }
@@ -84,9 +84,9 @@ namespace ConvNetSharp.Core.Training
             indexOfBest = 0;
             for (var i = 1; i < this.inner.Count; i++)
             {
-                if (this.inner[i].reward > this.inner[indexOfBest].reward)
+                if (this.inner[i].Reward > this.inner[indexOfBest].Reward)
                     indexOfBest = i;
-                if (this.inner[i].reward < this.inner[indexOfWorst].reward)
+                if (this.inner[i].Reward < this.inner[indexOfWorst].Reward)
                     indexOfWorst = i;
             }
         }

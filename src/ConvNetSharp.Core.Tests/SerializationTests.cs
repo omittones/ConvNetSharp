@@ -109,7 +109,7 @@ namespace ConvNetSharp.Core.Tests
             net.AddLayer(new SigmoidLayer());
             net.AddLayer(new TanhLayer());
             net.AddLayer(new FullyConnLayer(10) { BiasPref = 0.2 });
-            net.AddLayer(new SoftmaxLayer(10));
+            net.AddLayer(new SoftmaxLayer());
 
             var json = net.ToJson();
             var deserialized = SerializationExtensions.FromJson<double>(json);
@@ -127,7 +127,7 @@ namespace ConvNetSharp.Core.Tests
             net.AddLayer(new ReluLayer());
             net.AddLayer(new PoolLayer(3, 3) { Stride = 3 });
             net.AddLayer(new FullyConnLayer(10));
-            net.AddLayer(new SoftmaxLayer(10));
+            net.AddLayer(new SoftmaxLayer());
 
             var data = net.GetData();
 
@@ -258,7 +258,7 @@ namespace ConvNetSharp.Core.Tests
         [TestMethod]
         public void SoftmaxLayerSerialization()
         {
-            var layer = new SoftmaxLayer(10);
+            var layer = new SoftmaxLayer();
             layer.Init(28, 24, 1);
             var data = layer.GetData();
 

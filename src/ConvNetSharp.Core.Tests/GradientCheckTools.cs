@@ -32,7 +32,7 @@ namespace ConvNetSharp.Core.Tests
                 sample.Outputs = BuilderInstance<T>.Volume.Random(new Shape(lastLayer.OutputWidth, lastLayer.OutputHeight, lastLayer.OutputDepth));
 
                 sample.Outputs.MapInplace(v => Ops<T>.Multiply(v, v));
-                sample.Outputs = sample.Outputs.SoftMax();
+                sample.Outputs = sample.Outputs.Softmax();
                 samples.Add(sample);
             }
 

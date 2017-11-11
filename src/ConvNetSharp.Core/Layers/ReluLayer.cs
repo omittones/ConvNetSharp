@@ -13,11 +13,15 @@ namespace ConvNetSharp.Core.Layers
     {
         public ReluLayer()
         {
-            
         }
 
         public ReluLayer(Dictionary<string, object> data) : base(data)
         {
+        }
+
+        public override LayerBase<T> Clone()
+        {
+            return new ReluLayer<T>();
         }
 
         public override void Backward(Volume<T> outputGradient)

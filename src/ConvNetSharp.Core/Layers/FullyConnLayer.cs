@@ -9,6 +9,24 @@ namespace ConvNetSharp.Core.Layers
     {
         private T _biasPref;
 
+        public override LayerBase<T> Clone()
+        {
+            return new FullyConnLayer<T>(this.NeuronCount)
+            {
+                L1DecayMul = this.L1DecayMul,
+                L2DecayMul = this.L2DecayMul,
+                BiasPref = this.BiasPref
+            };
+        }
+
+        public FullyConnLayer(int neuronCount)
+        {
+            this.NeuronCount = neuronCount;
+
+            this.L1DecayMul = Ops<T>.Zero;
+            this.L2DecayMul = Ops<T>.One;
+        }
+
         public FullyConnLayer(Dictionary<string, object> data) : base(data)
         {
             this.L1DecayMul = Ops<T>.Zero;
@@ -21,14 +39,6 @@ namespace ConvNetSharp.Core.Layers
             this.BiasGradient = BuilderInstance<T>.Volume.SameAs(data["BiasGradient"].ToArrayOfT<T>(), new Shape(1, 1, this.NeuronCount));
             this.FiltersGradient = BuilderInstance<T>.Volume.SameAs(data["FiltersGradient"].ToArrayOfT<T>(), new Shape(1, 1, this.InputWidth * this.InputHeight * this.InputDepth, this.NeuronCount));
             this.IsInitialized = true;
-        }
-
-        public FullyConnLayer(int neuronCount)
-        {
-            this.NeuronCount = neuronCount;
-
-            this.L1DecayMul = Ops<T>.Zero;
-            this.L2DecayMul = Ops<T>.One;
         }
 
         public Volume<T> Bias { get; private set; }

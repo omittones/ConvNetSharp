@@ -6,7 +6,7 @@ namespace ConvNetSharp.Core.Training
 {
     public abstract class TrainerBase<T> where T : struct, IEquatable<T>, IFormattable
     {
-        public INet<T> Net { get; }
+        public INet<T> Net { get; protected set; }
 
         protected TrainerBase(INet<T> net)
         {

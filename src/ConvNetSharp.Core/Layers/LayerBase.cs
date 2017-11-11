@@ -14,6 +14,8 @@ namespace ConvNetSharp.Core.Layers
         {
         }
 
+        public abstract LayerBase<T> Clone();
+
         protected LayerBase(Dictionary<string, object> data)
         {
             this.InputWidth = Convert.ToInt32(data["InputWidth"]);
@@ -85,18 +87,6 @@ namespace ConvNetSharp.Core.Layers
 
             return this.OutputActivation;
         }
-
-//#if DEBUG
-//        protected void DumpAndThrow(T[] inputs)
-//        {
-//            var json = this.ToJson();
-//            var ex = new NotSupportedException("Invalid layer state!");
-//            ex.Data.Add("layer-json", json);
-//            var inputJson = "[" + string.Join(", ", inputs.Select(i => i.ToString())) + "]";
-//            ex.Data.Add("input-json", inputJson);
-//            throw ex;
-//        }
-//#endif
 
         protected abstract Volume<T> Forward(Volume<T> input, bool isTraining = false);
 

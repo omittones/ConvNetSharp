@@ -18,6 +18,15 @@ namespace ConvNetSharp.Core.Layers
         private double baseline;
         private Vol maxes;
 
+        public ReinforcementLayer()
+        {
+        }
+
+        public override LayerBase<double> Clone()
+        {
+            return new ReinforcementLayer(); 
+        }
+
         public override void Init(int inputWidth, int inputHeight, int inputDepth)
         {
             if (inputWidth != 1 || inputHeight != 1)

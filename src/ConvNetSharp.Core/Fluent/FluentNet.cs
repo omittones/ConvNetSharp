@@ -140,5 +140,15 @@ namespace ConvNetSharp.Core.Fluent
         {
             return new InputLayer<T>(inputWidth, inputHeight, inputDepth);
         }
+
+        public INet<T> Clone()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void CopyParameters(INet<T> to)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

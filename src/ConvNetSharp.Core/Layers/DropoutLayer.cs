@@ -7,6 +7,14 @@ namespace ConvNetSharp.Core.Layers
     {
         public T DropProbability { get; set; }
 
+        public override LayerBase<T> Clone()
+        {
+            return new DropoutLayer<T>()
+            {
+                DropProbability = this.DropProbability
+            };
+        }
+
         public override void Backward(Volume<T> outputGradient)
         {
             this.OutputActivationGradients = outputGradient;

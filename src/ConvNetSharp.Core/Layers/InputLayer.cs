@@ -6,13 +6,6 @@ namespace ConvNetSharp.Core.Layers
 {
     public class InputLayer<T> : LayerBase<T> where T : struct, IEquatable<T>, IFormattable
     {
-        public InputLayer(Dictionary<string, object> data) : base(data)
-        {
-            this.OutputWidth = this.InputWidth;
-            this.OutputHeight = this.InputHeight;
-            this.OutputDepth = this.InputDepth;
-        }
-
         public InputLayer(int inputWidth, int inputHeight, int inputDepth)
         {
             Init(inputWidth, inputHeight, inputDepth);
@@ -20,6 +13,18 @@ namespace ConvNetSharp.Core.Layers
             this.OutputWidth = inputWidth;
             this.OutputHeight = inputHeight;
             this.OutputDepth = inputDepth;
+        }
+
+        public InputLayer(Dictionary<string, object> data) : base(data)
+        {
+            this.OutputWidth = this.InputWidth;
+            this.OutputHeight = this.InputHeight;
+            this.OutputDepth = this.InputDepth;
+        }
+
+        public override LayerBase<T> Clone()
+        {
+            return new InputLayer<T>(InputWidth, InputHeight, InputDepth);
         }
 
         public override void Backward(Volume<T> outputGradient)

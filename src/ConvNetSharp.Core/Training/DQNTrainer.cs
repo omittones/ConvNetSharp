@@ -8,15 +8,17 @@ namespace ConvNetSharp.Core.Training
 {
     public class DQNTrainer : SgdTrainer<double>
     {
+        private INet<double> trainee;
+        private INet<double> freezed;
+
         private readonly Random rnd;
         private readonly int nmActions;
-        private readonly Net<double> net;
         private readonly Experiences replayMemory;
+        public IEnumerable<Experience> ReplayMemory => replayMemory;
+        public int ReplayMemoryCount => replayMemory.Count;
 
         public int Samples { get; private set; }
         public double QValue { get; private set; }
-        public int ReplayMemoryCount => replayMemory.Count;
-
         public double Gamma { get; set; }
         public double Epsilon { get; set; }
         public int ReplaySkipCount { get; set; }
@@ -24,6 +26,7 @@ namespace ConvNetSharp.Core.Training
         public double ClampErrorTo { get; set; }
         public double? MaxQValue { get; set; }
         public double? MinQValue { get; set; }
+        public int FreezeInterval { get; set; }
 
         public static double TheoreticalMaxQValue(double gamma, double maxReward)
         {
@@ -72,10 +75,12 @@ namespace ConvNetSharp.Core.Training
             this.ReplayMemoryDiscardStrategy = ExperienceDiscardStrategy.First;
             this.ReplaysPerIteration = 100;
             this.ClampErrorTo = double.MaxValue;
+            this.FreezeInterval = 1;
 
             this.nmActions = nmActions;
 
-            this.net = net;
+            this.freezed = net;
+            this.trainee = net;
 
             this.Reset();
         }
@@ -89,22 +94,39 @@ namespace ConvNetSharp.Core.Training
 
         public Decision Act(double[] state)
         {
-            var action = new Decision();
-            action.State = (double[])state.Clone();
+            EnsureInitialized();
+
+            state = (double[])state.Clone();
+
+            var action = 0;
 
             // epsilon greedy policy
             if (rnd.NextDouble() < this.Epsilon)
             {
-                action.Action = rnd.Next(0, this.nmActions);
+                action = rnd.Next(0, this.nmActions);
             }
             else
             {
                 // greedy wrt Q function
-                var output = this.net.Forward(action.State, false);
-                action.Action = output.IndexOfMax();
+                var output = this.freezed.Forward(state, false);
+                action = output.IndexOfMax();
             }
 
-            return action;
+            return new Decision(action, state);
+        }
+
+        private void EnsureInitialized()
+        {
+            if (FreezeInterval > 1 && object.ReferenceEquals(this.freezed, this.trainee))
+            {
+                this.Net = this.freezed.Clone();
+                this.trainee = this.Net;
+            }
+            else if (FreezeInterval <= 1 && object.ReferenceEquals(this.freezed, this.trainee))
+            {
+                this.Net = this.freezed;
+                this.trainee = this.freezed;
+            }
         }
 
         public double Learn(Decision decision, double[] nextState, double reward)
@@ -115,8 +137,8 @@ namespace ConvNetSharp.Core.Training
             if (this.LearningRate > 0)
             {
                 // learn from this tuple to get a sense of how "surprising" it is to the agent
-                var xp = Experience.New(decision.State, decision.Action, reward, (double[])nextState.Clone());
-                this.Loss = learnFromExperience(xp.state, xp.actionTaken, xp.reward, xp.nextState);
+                var xp = Experience.New(decision.State, decision.Action, reward, nextState);
+                this.Loss = learnFromExperience(xp.State, xp.ActionTaken, xp.Reward, xp.NextState);
 
                 // decide if we should keep this experience in the replay
                 if (this.ReplaySkipCount < 1 ||
@@ -143,7 +165,14 @@ namespace ConvNetSharp.Core.Training
                 }
 
                 foreach (var e in trainingSet)
-                    learnFromExperience(e.state, e.actionTaken, e.reward, e.nextState);
+                    learnFromExperience(e.State, e.ActionTaken, e.Reward, e.NextState);
+            }
+
+            if (!object.ReferenceEquals(this.trainee, this.freezed) &&
+                this.FreezeInterval > 1 &&
+                Samples % this.FreezeInterval == 0)
+            {
+                this.trainee.CopyParameters(this.freezed);
             }
 
             return this.Loss;
@@ -168,13 +197,11 @@ namespace ConvNetSharp.Core.Training
             // compute the target Q value (current reward + gamma * next reward)
             if (Gamma != 0)
             {
-                var a1vol = this.net.Forward(s1, false);
+                var a1vol = this.freezed.Forward(s1, false);
                 var a1val = a1vol.IndexOfMax();
                 var r1 = a1vol.Get(0, 0, a1val, 0);
-
-                r1 = adjustQValuePerSettings(r1);
-
                 r0 += this.Gamma * r1;
+                r0 = adjustQValuePerSettings(r0);
             }
 
             if (this.QValue == double.MinValue)

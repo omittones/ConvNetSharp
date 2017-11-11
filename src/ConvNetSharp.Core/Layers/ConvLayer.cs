@@ -11,6 +11,18 @@ namespace ConvNetSharp.Core.Layers
         private int _pad;
         private int _stride = 1;
 
+        public override LayerBase<T> Clone()
+        {
+            return new ConvLayer<T>(this.Width, this.Height, this.FilterCount)
+            {
+                Pad = this.Pad,
+                Stride = this.Stride,
+                BiasPref = this.BiasPref,
+                L1DecayMul = this.L1DecayMul,
+                L2DecayMul = this.L2DecayMul
+            };
+        }
+
         public ConvLayer(Dictionary<string, object> data) : base(data)
         {
             this.L1DecayMul = Ops<T>.Zero;

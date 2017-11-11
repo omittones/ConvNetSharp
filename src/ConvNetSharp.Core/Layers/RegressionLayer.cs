@@ -23,6 +23,11 @@ namespace ConvNetSharp.Core.Layers
         {
         }
 
+        public override LayerBase<T> Clone()
+        {
+            return new RegressionLayer<T>();
+        }
+
         public override void Init(int inputWidth, int inputHeight, int inputDepth)
         {
             base.Init(inputWidth, inputHeight, inputDepth);

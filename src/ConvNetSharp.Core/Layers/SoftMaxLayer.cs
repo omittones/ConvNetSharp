@@ -15,6 +15,11 @@ namespace ConvNetSharp.Core.Layers
             this.ClassCount = Convert.ToInt32(data["ClassCount"]);
         }
 
+        public override LayerBase<T> Clone()
+        {
+            return new SoftmaxLayer<T>();
+        }
+
         public int ClassCount { get; private set; }
 
         /// <summary>

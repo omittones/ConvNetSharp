@@ -8,15 +8,44 @@ namespace ConvNetSharp.Core
 {
     public class Net<T> : INet<T> where T : struct, IEquatable<T>, IFormattable
     {
-        public List<LayerBase<T>> Layers { get; } = new List<LayerBase<T>>();
+        private List<LayerBase<T>> layers = new List<LayerBase<T>>();
+        public IReadOnlyList<LayerBase<T>> Layers => layers;
+
+        public INet<T> Clone()
+        {
+            var clone = new Net<T>();
+            foreach (var layer in this.Layers)
+                clone.AddLayer(layer.Clone());
+            CopyParameters(clone);
+            return clone;
+        }
+
+        public void CopyParameters(INet<T> to)
+        {
+            var source = this.GetParametersAndGradients();
+            var destination = to.GetParametersAndGradients();
+            for (var i = 0; i < source.Count; i++)
+            {
+                CopyVolume(source[i].Volume, destination[i].Volume);
+                CopyVolume(source[i].Gradient, destination[i].Gradient);
+                destination[i].L1DecayMul = source[i].L1DecayMul;
+                destination[i].L2DecayMul = source[i].L2DecayMul;
+            }
+        }
+
+        private void CopyVolume(Volume<T> from, Volume<T> to)
+        {
+            to.Clear();
+            from.DoAdd(to, to);
+        }
 
         public Volume<T> Forward(Volume<T> input, bool isTraining = false)
         {
-            var activation = this.Layers[0].DoForward(input, isTraining);
+            var activation = this.layers[0].DoForward(input, isTraining);
 
-            for (var i = 1; i < this.Layers.Count; i++)
+            for (var i = 1; i < this.layers.Count; i++)
             {
-                var layer = this.Layers[i];
+                var layer = this.layers[i];
                 activation = layer.DoForward(activation, isTraining);
             }
 
@@ -27,7 +56,7 @@ namespace ConvNetSharp.Core
         {
             Forward(input);
 
-            var lastLayer = this.Layers[this.Layers.Count - 1] as ILastLayer<T>;
+            var lastLayer = this.layers[this.layers.Count - 1] as ILastLayer<T>;
             if (lastLayer != null)
             {
                 T loss;
@@ -40,16 +69,16 @@ namespace ConvNetSharp.Core
 
         public T Backward(Volume<T> y)
         {
-            var n = this.Layers.Count;
-            var lastLayer = this.Layers[n - 1] as ILastLayer<T>;
+            var n = this.layers.Count;
+            var lastLayer = this.layers[n - 1] as ILastLayer<T>;
             if (lastLayer != null)
             {
                 T loss;
                 lastLayer.Backward(y, out loss); // last layer assumed to be loss layer
                 for (var i = n - 2; i >= 0; i--)
                 {
-                    var lastInputGradients = this.Layers[i + 1].InputActivationGradients;
-                    var thisLayer = this.Layers[i];
+                    var lastInputGradients = this.layers[i + 1].InputActivationGradients;
+                    var thisLayer = this.layers[i];
                     thisLayer.Backward(lastInputGradients);
                 }
 
@@ -63,7 +92,7 @@ namespace ConvNetSharp.Core
         {
             // this is a convenience function for returning the argmax
             // prediction, assuming the last layer of the net is a softmax
-            var softmaxLayer = this.Layers[this.Layers.Count - 1] as SoftmaxLayer<T>;
+            var softmaxLayer = this.layers[this.layers.Count - 1] as SoftmaxLayer<T>;
             if (softmaxLayer == null)
             {
                 throw new Exception("GetPrediction function assumes softmax as last layer of the net!");
@@ -111,12 +140,13 @@ namespace ConvNetSharp.Core
             int inputWidth = 0, inputHeight = 0, inputDepth = 0;
             LayerBase<T> lastLayer = null;
 
-            if (this.Layers.Count > 0)
+            if (this.layers.Count > 0)
             {
-                inputWidth = this.Layers[this.Layers.Count - 1].OutputWidth;
-                inputHeight = this.Layers[this.Layers.Count - 1].OutputHeight;
-                inputDepth = this.Layers[this.Layers.Count - 1].OutputDepth;
-                lastLayer = this.Layers[this.Layers.Count - 1];
+                var last = layers.Count - 1;
+                inputWidth = this.layers[last].OutputWidth;
+                inputHeight = this.layers[last].OutputHeight;
+                inputDepth = this.layers[last].OutputDepth;
+                lastLayer = this.layers[last];
 
                 layer.Init(inputWidth, inputHeight, inputDepth);
             }
@@ -157,7 +187,7 @@ namespace ConvNetSharp.Core
                 }
             }
             
-            this.Layers.Add(layer);
+            this.layers.Add(layer);
         }
 
         public void Dump(string filename)
@@ -165,35 +195,21 @@ namespace ConvNetSharp.Core
             using (var stream = File.Create(filename))
             using (var sw = new StreamWriter(stream))
             {
-                for (var index = 0; index < this.Layers.Count; index++)
+                for (var index = 0; index < this.layers.Count; index++)
                 {
-                    var layerBase = this.Layers[index];
+                    var layerBase = this.layers[index];
                     sw.WriteLine($"=== Layer {index}");
                     sw.WriteLine("Input");
                     sw.Write(layerBase.InputActivation.ToString());
-
-                    //if (layerBase.InputActivationGradients != null)
-                    //{
-                    //    sw.Write(layerBase.InputActivationGradients.ToString());
-                    //}
-
-                    //var input = layerBase as InputLayer<T>;
-                    //if (input != null)
-                    //{
-                    //    sw.WriteLine("Input");
-                    //    sw.Write(input.InputActivation.ToString());
-                    //}
 
                     var conv = layerBase as ConvLayer<T>;
                     if (conv != null)
                     {
                         sw.WriteLine("Filter");
                         sw.Write(conv.Filters.ToString());
-                        //sw.Write(conv.FiltersGradient.ToString());
 
                         sw.WriteLine("Bias");
                         sw.Write(conv.Bias.ToString());
-                        //sw.Write(conv.BiasGradient.ToString());
                     }
 
                     var full = layerBase as FullyConnLayer<T>;
@@ -201,11 +217,9 @@ namespace ConvNetSharp.Core
                     {
                         sw.WriteLine("Filter");
                         sw.Write(full.Filters.ToString());
-                        //sw.Write(full.FiltersGradient.ToString());
 
                         sw.WriteLine("Bias");
                         sw.Write(full.Bias.ToString());
-                        //sw.Write(full.BiasGradient.ToString());
                     }
                 }
             }
@@ -224,7 +238,7 @@ namespace ConvNetSharp.Core
             foreach (var layerData in layers)
             {
                 var layer = LayerBase<T>.FromData(layerData);
-                net.Layers.Add(layer);
+                net.layers.Add(layer);
             }
 
             return net;
