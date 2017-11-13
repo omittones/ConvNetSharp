@@ -1,4 +1,4 @@
-﻿using ConvNetSharp.Volume;
+﻿using ConvNetSharp.Volume; 
 using System.Linq;
 using System.Diagnostics;
 using ConvNetSharp.Core.Layers;
@@ -7,50 +7,59 @@ using System.Collections.Generic;
 
 namespace ConvNetSharp.Core.Training
 {
-    public class ActionGradient
+    public class ActionInput
     {
         public int Action;
         public Volume<double> Inputs;
+
+        public override string ToString()
+        {
+            return "action: " + Action.ToString();
+        }
     }
-    
-    public class ActionGradientReward
+
+    public class ActionInputReward
     {
         public int Action;
         public Volume<double> Inputs;
         public double Reward;
+
+        public override string ToString()
+        {
+            return $"{Action} -> {Reward:0.000} reward";
+        }
     }
 
-    public class Path : List<ActionGradientReward>
+    public class Path : List<ActionInputReward>
     {
         internal bool Used;
 
-        public void SetReward(double reward, double gamma = 1.0)
+        public void SetReward(double reward)
         {
-            double previous = 0;
-            foreach (var ag in this)
-            {
-                ag.Reward = previous * gamma + reward;
-                previous = ag.Reward;
-            }
+            foreach (var action in this)
+                action.Reward = reward;
         }
 
-        public void Add(ActionGradient step)
+        public void Add(ActionInput step)
         {
-            this.Add(new ActionGradientReward
+            this.Add(new ActionInputReward
             {
                 Action = step.Action,
                 Inputs = step.Inputs,
                 Reward = 0
             });
         }
+
+        public override string ToString()
+        {
+            var avg = this.Average(a => a.Reward);
+            var actions = string.Join(", ", this.Select(e => e.Action).ToArray());
+            return $"[{actions}] -> {avg:0.000} reward";
+        }
     }
     
     public class ReinforcementTrainer : SgdTrainer<double>
     {
-        public bool ApplyBaselineAndNormalizeReturns { get; set; }
-
-        public double Baseline { get; private set; }
-        public double RewardDiscountGamma { get; set; }
         public double EstimatedRewards => Ops<double>.Negate(this.Loss);
 
         private readonly SoftmaxLayer<double> finalLayer;
@@ -60,10 +69,6 @@ namespace ConvNetSharp.Core.Training
 
         public ReinforcementTrainer(Net<double> net) : base(net)
         {
-            this.Baseline = Ops<double>.Zero;
-            this.RewardDiscountGamma = Ops<double>.Zero;
-            this.ApplyBaselineAndNormalizeReturns = true;
-
             this.inputLayer = net.Layers
                 .OfType<InputLayer<double>>()
                 .Single();
@@ -73,7 +78,7 @@ namespace ConvNetSharp.Core.Training
                 .Last();
         }
 
-        public ActionGradient Act(Volume<double> inputs)
+        public ActionInput Act(Volume<double> inputs)
         {
             if (inputs.BatchSize != 1)
                 throw new NotSupportedException("Not supported!");
@@ -85,7 +90,7 @@ namespace ConvNetSharp.Core.Training
 
             var action = output.IndexOfMax();
 
-            return new ActionGradient
+            return new ActionInput
             {
                 Inputs = inputs.Clone(),
                 Action = action
@@ -119,8 +124,6 @@ namespace ConvNetSharp.Core.Training
             this.BatchSize = paths.Select(p => p.Count).Sum();
             ReinitCache(this.BatchSize);
 
-            double average = 0.0;
-
             output.Clear();
             var flatInput = input.ReShape(1, 1, -1, this.BatchSize);
             this.finalLayer.BatchRewards = new double[this.BatchSize];
@@ -130,27 +133,26 @@ namespace ConvNetSharp.Core.Training
                 if (path.Used)
                     throw new NotSupportedException();
 
+                int startOfBatch = currentBatch;
                 foreach (var action in path)
                 {
                     var flatAction = action.Inputs.ReShape(1, 1, -1, 1);
                     for (var d = 0; d < flatAction.Depth; d++)
                         flatInput.Set(0, 0, d, currentBatch, flatAction.Get(0, 0, d, 0));
-
                     output.Set(0, 0, action.Action, currentBatch, 1.0);
-
                     this.finalLayer.BatchRewards[currentBatch] = action.Reward;
-
-                    average += (action.Reward / this.BatchSize);
-
                     currentBatch++;
                 }
 
+                //implement reward to GO (reward_t = reward_t + ... + reward_end)
+                for (var batch = currentBatch - 2; batch >= startOfBatch; batch--)
+                    this.finalLayer.BatchRewards[batch] += this.finalLayer.BatchRewards[batch + 1];
+                
                 path.Used = true;
             }
 
-            this.Loss = average;
-
             //apply baseline
+            var average = this.finalLayer.BatchRewards.Average();
             for (var i = 0; i < this.BatchSize; i++)
                 this.finalLayer.BatchRewards[i] = this.finalLayer.BatchRewards[i] - average;
 
@@ -158,49 +160,11 @@ namespace ConvNetSharp.Core.Training
             
             this.Backward(output);
 
+            this.Loss = average;
+
             //gradient ascent!
             foreach (var grad in this.Net.GetParametersAndGradients())
                 grad.Gradient.DoNegate(grad.Gradient);
-
-            //if (ApplyBaselineAndNormalizeReturns)
-            //{
-            //    returns = returns
-            //        .Select(r => r - Baseline)
-            //        .ToArray();
-            //    //normalize by standard deviation
-            //    var stdDev = returns
-            //        .Select(a => a * a)
-            //        .Average();
-            //    returns = returns
-            //        .Select(r => r / stdDev)
-            //        .ToArray();
-            //}
-            //if (this.advantage == null || this.advantage.Length != returns.Length)
-            //    this.advantage = new double[returns.Length];
-            //this.baseline = baseline;
-            ////advantage = discounted returns - baseline
-            ////normalize by stddev
-            //double stddev = 0;
-            //for (var i = 0; i < returns.Length; i++)
-            //{
-            //    var adv = Ops<double>.Subtract(returns[i], baseline);
-            //    stddev += (adv * adv) / returns.Length;
-            //    this.advantage[i] = adv;
-            //}
-            //stddev = Ops<double>.Sqrt(stddev);
-            //if (stddev != 0)
-            //    for (var i = 0; i < advantage.Length; i++)
-            //        this.advantage[i] = this.advantage[i] / stddev;
-            //this.finalLayer.SetReturns(pathActions, returns);
-            //if (ApplyBaselineAndNormalizeReturns)
-            //{
-            //    //refit baseline to minimize Sum[(R - b)^2]
-            //    Baseline = Ops<double>.Zero;
-            //    for (var i = 0; i < pathReturns.Length; i++)
-            //        Baseline = Ops<double>.Add(pathReturns[i], Baseline);
-            //    Baseline = Ops<double>.Divide(Baseline, Ops<double>.Cast(pathReturns.Length));
-            //}
-            //this.Backward(pathInputs);
 
             var chrono = Stopwatch.StartNew();
 
