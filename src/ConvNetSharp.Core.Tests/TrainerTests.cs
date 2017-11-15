@@ -108,7 +108,7 @@ namespace ConvNetSharp.Core.Tests
             net.GetParametersAndGradients()
                 .ForEach(g => g.Gradient.Clear());
 
-            lastLayer.BatchRewards = new[] { 1000.0 };
+            lastLayer.GradientMultiplier = new[] { 1000.0 };
             net.Forward(new[] { 1, 2, 3, 4, 5, 6, 7, 8.0 }, true);
             net.Backward(new[] { 0.0, 1.0 });
 

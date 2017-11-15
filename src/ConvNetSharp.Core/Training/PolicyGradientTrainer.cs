@@ -1,73 +1,21 @@
-﻿using ConvNetSharp.Volume; 
+﻿using ConvNetSharp.Volume;
 using System.Linq;
 using System.Diagnostics;
 using ConvNetSharp.Core.Layers;
 using System;
-using System.Collections.Generic;
 
 namespace ConvNetSharp.Core.Training
 {
-    public class ActionInput
+    public class PolicyGradientTrainer : SgdTrainer<double>
     {
-        public int Action;
-        public Volume<double> Inputs;
-
-        public override string ToString()
-        {
-            return "action: " + Action.ToString();
-        }
-    }
-
-    public class ActionInputReward
-    {
-        public int Action;
-        public Volume<double> Inputs;
-        public double Reward;
-
-        public override string ToString()
-        {
-            return $"{Action} -> {Reward:0.000} reward";
-        }
-    }
-
-    public class Path : List<ActionInputReward>
-    {
-        internal bool Used;
-
-        public void SetReward(double reward)
-        {
-            foreach (var action in this)
-                action.Reward = reward;
-        }
-
-        public void Add(ActionInput step)
-        {
-            this.Add(new ActionInputReward
-            {
-                Action = step.Action,
-                Inputs = step.Inputs,
-                Reward = 0
-            });
-        }
-
-        public override string ToString()
-        {
-            var avg = this.Average(a => a.Reward);
-            var actions = string.Join(", ", this.Select(e => e.Action).ToArray());
-            return $"[{actions}] -> {avg:0.000} reward";
-        }
-    }
-    
-    public class ReinforcementTrainer : SgdTrainer<double>
-    {
-        public double EstimatedRewards => Ops<double>.Negate(this.Loss);
+        public double EstimatedRewards { get; private set; }
 
         private readonly SoftmaxLayer<double> finalLayer;
         private readonly InputLayer<double> inputLayer;
         private Volume<double> input;
         private Volume<double> output;
 
-        public ReinforcementTrainer(Net<double> net) : base(net)
+        public PolicyGradientTrainer(Net<double> net) : base(net)
         {
             this.inputLayer = net.Layers
                 .OfType<InputLayer<double>>()
@@ -126,7 +74,7 @@ namespace ConvNetSharp.Core.Training
 
             output.Clear();
             var flatInput = input.ReShape(1, 1, -1, this.BatchSize);
-            this.finalLayer.BatchRewards = new double[this.BatchSize];
+            this.finalLayer.GradientMultiplier = new double[this.BatchSize];
             int currentBatch = 0;
             foreach (var path in paths)
             {
@@ -140,27 +88,48 @@ namespace ConvNetSharp.Core.Training
                     for (var d = 0; d < flatAction.Depth; d++)
                         flatInput.Set(0, 0, d, currentBatch, flatAction.Get(0, 0, d, 0));
                     output.Set(0, 0, action.Action, currentBatch, 1.0);
-                    this.finalLayer.BatchRewards[currentBatch] = action.Reward;
+                    this.finalLayer.GradientMultiplier[currentBatch] = action.Reward;
                     currentBatch++;
                 }
 
                 //implement reward to GO (reward_t = reward_t + ... + reward_end)
                 for (var batch = currentBatch - 2; batch >= startOfBatch; batch--)
-                    this.finalLayer.BatchRewards[batch] += this.finalLayer.BatchRewards[batch + 1];
-                
+                    this.finalLayer.GradientMultiplier[batch] += this.finalLayer.GradientMultiplier[batch + 1];
+
                 path.Used = true;
             }
 
             //apply baseline
-            var average = this.finalLayer.BatchRewards.Average();
+            var baseline = this.finalLayer.GradientMultiplier.Average();
             for (var i = 0; i < this.BatchSize; i++)
-                this.finalLayer.BatchRewards[i] = this.finalLayer.BatchRewards[i] - average;
+                this.finalLayer.GradientMultiplier[i] = this.finalLayer.GradientMultiplier[i] - baseline;
+
+            //normalize
+            var stdDev = 0.0;
+            for (var i = 0; i < this.BatchSize; i++)
+            {
+                var r = this.finalLayer.GradientMultiplier[i];
+                stdDev += r * r / this.finalLayer.GradientMultiplier.Length;
+            }
+            stdDev = Math.Sqrt(stdDev);
+            for (var i = 0; i < this.BatchSize; i++)
+            {
+                if (stdDev == 0)
+                {
+                    this.finalLayer.GradientMultiplier[i] = 1;
+                }
+                else
+                {
+                    var r = this.finalLayer.GradientMultiplier[i];
+                    this.finalLayer.GradientMultiplier[i] = r / stdDev;
+                }
+            }
 
             this.Forward(input);
-            
+
             this.Backward(output);
 
-            this.Loss = average;
+            this.EstimatedRewards = baseline;
 
             //gradient ascent!
             foreach (var grad in this.Net.GetParametersAndGradients())

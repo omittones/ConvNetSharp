@@ -22,7 +22,7 @@ namespace ConvNetSharp.Core.Layers
 
         public int ClassCount { get; private set; }
 
-        public T[] BatchRewards { get; set; }
+        public T[] GradientMultiplier { get; set; }
 
         /// <summary>
         /// This computes the cross entropy loss and its gradient (not the softmax gradient)
@@ -34,13 +34,13 @@ namespace ConvNetSharp.Core.Layers
             // input gradient = pi - yi
             y.DoSubtractFrom(this.OutputActivation, this.InputActivationGradients.ReShape(this.OutputActivation.Shape));
 
-            if (BatchRewards != null)
+            if (GradientMultiplier != null)
             {
                 var reshaped = this.InputActivationGradients.ReShape(1, 1, -1, this.InputActivationGradients.BatchSize);
 
                 for (var n = 0; n < reshaped.BatchSize; n++)
                     for (var d = 0; d < reshaped.Depth; d++)
-                        reshaped.Set(0, 0, d, n, Ops<T>.Multiply(reshaped.Get(0, 0, d, n), BatchRewards[n]));
+                        reshaped.Set(0, 0, d, n, Ops<T>.Multiply(reshaped.Get(0, 0, d, n), GradientMultiplier[n]));
             }
 
             //loss is the class negative log likelihood
