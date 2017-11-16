@@ -46,7 +46,7 @@ namespace ConvNetSharp.Core.Training
             this.L1DecayLoss = Ops<T>.Zero;
         }
 
-        protected override void TrainImplem()
+        protected override void TrainImplem(int batchSize)
         {
             var parametersAndGradients = this.Net.GetParametersAndGradients();
 
@@ -60,7 +60,7 @@ namespace ConvNetSharp.Core.Training
                 }
             }
 
-            var factor = Ops<T>.Divide(Ops<T>.One, Ops<T>.Cast(this.BatchSize));
+            var factor = Ops<T>.Divide(Ops<T>.One, Ops<T>.Cast(batchSize));
 
             // perform an update for all sets of weights
             for (var i = 0; i < parametersAndGradients.Count; i++)
@@ -103,7 +103,7 @@ namespace ConvNetSharp.Core.Training
                 grad.Clear(); // zero out gradient so that we can begin accumulating anew
             }
 
-            this.k += this.BatchSize;
+            this.k += batchSize;
         }
     }
 }

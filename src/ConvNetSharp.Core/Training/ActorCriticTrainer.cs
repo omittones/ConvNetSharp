@@ -19,11 +19,15 @@ namespace ConvNetSharp.Core.Training
             this.valueFunctionTrainer = valueFunctionTrainer;
             this.Gamma = 0.99;
             this.LearningRate = 0.1;
+
+            var prms = this.valueFunctionTrainer.Net.GetParametersAndGradients();
+            foreach (var prm in prms)
+                prm.Volume.DoMultiply(prm.Volume, 0.0001);
         }
 
-        private Volume<double> PathState(Path path)
+        private Volume<double> BatchStates(Path path)
         {
-            var shape = path.First().State.Shape;
+            var shape = Shape.From(path.First().State.Shape);
             if (shape.GetDimension(3) != 1)
                 throw new NotSupportedException();
             shape.SetDimension(3, path.Count);
@@ -40,11 +44,11 @@ namespace ConvNetSharp.Core.Training
             return this.valueFunctionTrainer.Net.Forward(states, false);
         }
 
+        //TODO - optimize this, it does two forwards
         protected override double[] GetGradientMultipliers(Path[] paths)
         {
-            var states = paths.Select(PathState).ToArray();
+            var states = paths.Select(BatchStates).ToArray();
 
-            //TODO - optimize this, it does two forwards
             var values = states
                 .Select(s => this.valueFunctionTrainer.Net.Forward(s, false).Clone())
                 .ToArray();
@@ -87,6 +91,13 @@ namespace ConvNetSharp.Core.Training
                     currentBatch++;
                 }
             }
+
+            //normalize
+            var avg = advantages.Average();
+            var stdev = advantages.Select(a => (a - avg) * (a - avg)).Average();
+            stdev = Math.Sqrt(stdev);
+            for (var ai = 0; ai < advantages.Length; ai++)
+                advantages[ai] = stdev == 0 ? 1 : advantages[ai] / stdev;
 
             return advantages;
 

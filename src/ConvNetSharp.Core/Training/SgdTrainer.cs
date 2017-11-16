@@ -11,12 +11,14 @@ namespace ConvNetSharp.Core.Training
     public class SgdTrainer<T> : TrainerBase<T>, IDisposable where T : struct, IEquatable<T>, IFormattable
     {
         // last iteration gradients (used for momentum calculations)
+        private readonly VolumeBuilder<T> builder;
         private readonly List<Volume<T>> velocities = new List<Volume<T>>();
         private readonly List<Volume<T>> deltas = new List<Volume<T>>();
         private readonly List<Volume<T>> regGrads = new List<Volume<T>>();
 
         public SgdTrainer(INet<T> net) : base(net)
         {
+            this.builder = BuilderInstance<T>.Volume;
         }
 
         public T L1Decay { get; set; }
@@ -49,7 +51,7 @@ namespace ConvNetSharp.Core.Training
             this.L1DecayLoss = Ops<T>.Zero;
         }
 
-        protected override void TrainImplem()
+        protected override void TrainImplem(int batchSize)
         {
             var parametersAndGradients = this.Net.GetParametersAndGradients();
             var isMomentumGreaterThanZero = Ops<T>.GreaterThan(this.Momentum, Ops<T>.Zero);
@@ -59,9 +61,9 @@ namespace ConvNetSharp.Core.Training
             {
                 foreach (var parameter in parametersAndGradients)
                 {
-                    this.velocities.Add(BuilderInstance<T>.Volume.SameAs(parameter.Volume.Shape));
-                    this.deltas.Add(BuilderInstance<T>.Volume.SameAs(parameter.Volume.Shape));
-                    this.regGrads.Add(BuilderInstance<T>.Volume.SameAs(parameter.Volume.Shape));
+                    this.velocities.Add(builder.SameAs(parameter.Volume.Shape));
+                    this.deltas.Add(builder.SameAs(parameter.Volume.Shape));
+                    this.regGrads.Add(builder.SameAs(parameter.Volume.Shape));
                 }
             }
 
@@ -108,7 +110,7 @@ namespace ConvNetSharp.Core.Training
                     delta.DoAdd(regularizationGradients, delta);
                 }
 
-                T batchAdjustedLearningRate = Ops<T>.Divide(this.LearningRate, Ops<T>.Cast(this.BatchSize));
+                T batchAdjustedLearningRate = Ops<T>.Divide(this.LearningRate, Ops<T>.Cast(batchSize));
 
                 //delta = gradient + regularization;
                 gradients.DoMultiply(gradients, batchAdjustedLearningRate);

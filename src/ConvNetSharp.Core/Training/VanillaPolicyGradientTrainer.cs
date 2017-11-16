@@ -14,7 +14,9 @@ namespace ConvNetSharp.Core.Training
 
         protected override double[] GetGradientMultipliers(Path[] paths)
         {
-            var multipliers = new double[this.BatchSize];
+            var batchSize = paths.Sum(p => p.Count);
+
+            var multipliers = new double[batchSize];
             int currentBatch = 0;
             foreach (var path in paths)
             {
@@ -32,18 +34,18 @@ namespace ConvNetSharp.Core.Training
 
             //apply baseline
             var baseline = multipliers.Average();
-            for (var i = 0; i < this.BatchSize; i++)
+            for (var i = 0; i < batchSize; i++)
                 multipliers[i] = multipliers[i] - baseline;
 
             //normalize
             var stdDev = 0.0;
-            for (var i = 0; i < this.BatchSize; i++)
+            for (var i = 0; i < batchSize; i++)
             {
                 var r = multipliers[i];
                 stdDev += r * r / multipliers.Length;
             }
             stdDev = Math.Sqrt(stdDev);
-            for (var i = 0; i < this.BatchSize; i++)
+            for (var i = 0; i < batchSize; i++)
             {
                 if (stdDev == 0)
                 {

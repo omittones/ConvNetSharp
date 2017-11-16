@@ -71,8 +71,8 @@ namespace ConvNetSharp.Core.Training
             foreach (var png in netGrads)
                 png.Gradient.Clear();
 
-            this.BatchSize = paths.Select(p => p.Count).Sum();
-            ReinitCache(this.BatchSize);
+            var batchSize = paths.Select(p => p.Count).Sum();
+            ReinitCache(batchSize);
 
             this.BuildSets(paths);
 
@@ -87,9 +87,7 @@ namespace ConvNetSharp.Core.Training
                 grad.Gradient.DoNegate(grad.Gradient);
 
             var chrono = Stopwatch.StartNew();
-
-            TrainImplem();
-
+            TrainImplem(batchSize);
             this.UpdateWeightsTimeMs = chrono.Elapsed.TotalMilliseconds / paths.Sum(p => p.Count);
         }
 
@@ -97,7 +95,7 @@ namespace ConvNetSharp.Core.Training
         {
             output.Clear();
 
-            var flatInput = input.ReShape(1, 1, -1, this.BatchSize);
+            var flatInput = input.ReShape(1, 1, -1, input.BatchSize);
             int currentBatch = 0;
             foreach (var path in paths)
             {

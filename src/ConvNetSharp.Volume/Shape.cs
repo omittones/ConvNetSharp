@@ -212,15 +212,9 @@ namespace ConvNetSharp.Volume
         public void SetDimension(int index, int dimension)
         {
             if (index < 0)
-            {
                 index += this.DimensionCount;
-            }
-
             if (index < 0)
-            {
                 index = 0;
-            }
-
             this.Dimensions[index] = dimension;
             UpdateTotalLength();
         }
