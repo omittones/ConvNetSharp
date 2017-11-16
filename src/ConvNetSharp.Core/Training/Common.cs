@@ -21,7 +21,7 @@ namespace ConvNetSharp.Core.Training
     public class ActionInputReward
     {
         public int Action;
-        public Volume<double> Inputs;
+        public Volume<double> State;
         public double Reward;
 
         public override string ToString()
@@ -45,7 +45,7 @@ namespace ConvNetSharp.Core.Training
             this.Add(new ActionInputReward
             {
                 Action = step.Action,
-                Inputs = step.Inputs,
+                State = step.Inputs,
                 Reward = 0
             });
         }

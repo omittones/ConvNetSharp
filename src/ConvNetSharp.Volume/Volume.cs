@@ -339,6 +339,18 @@ namespace ConvNetSharp.Volume
             return this.ReShape((Shape)dimensions);
         }
 
+        public void CopyTo(Volume<T> destination, int batchStart)
+        {
+            for (var n = 0; n < this.BatchSize; n++)
+                for (var w = 0; w < this.Width; w++)
+                    for (var h = 0; h < this.Height; h++)
+                        for (var c = 0; c < this.Depth; c++)
+                        {
+                            var value = this.Get(w, h, c, n);
+                            destination.Set(w, h, c, batchStart + n, value);
+                        }
+        }
+
         public void Set(int[] coordinates, T value)
         {
             this.Storage.Set(coordinates, value);
