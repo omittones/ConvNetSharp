@@ -26,7 +26,7 @@ namespace ConvNetSharp.Core.Training
                 .Last();
         }
 
-        public ActionInput Act(Volume<double> inputs)
+        public virtual ActionInput Act(Volume<double> inputs)
         {
             if (inputs.BatchSize != 1)
                 throw new NotSupportedException("Not supported!");
@@ -65,7 +65,7 @@ namespace ConvNetSharp.Core.Training
 
         protected abstract double[] GetGradientMultipliers(Path[] paths);
 
-        public void Reinforce(Path[] paths)
+        public virtual void Reinforce(Path[] paths)
         {
             var netGrads = this.Net.GetParametersAndGradients();
             foreach (var png in netGrads)
