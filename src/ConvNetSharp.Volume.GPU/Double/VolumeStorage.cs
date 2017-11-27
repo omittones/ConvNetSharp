@@ -29,6 +29,11 @@ namespace ConvNetSharp.Volume.GPU.Double
             this._isOwner = true;
         }
 
+        public override void Set(double[] values)
+        {
+            throw new NotImplementedException();
+        }
+
         public VolumeStorage(double[] array, Shape shape, GpuContext context) : this(shape, context, array.Length)
         {
             this.Context = context;

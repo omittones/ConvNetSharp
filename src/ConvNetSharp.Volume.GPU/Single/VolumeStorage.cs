@@ -29,6 +29,11 @@ namespace ConvNetSharp.Volume.GPU.Single
             this._isOwner = true;
         }
 
+        public override void Set(float[] values)
+        {
+            throw new NotImplementedException();
+        }
+
         public VolumeStorage(float[] array, Shape shape, GpuContext context) : this(shape, context, array.Length)
         {
             this.Context = context;

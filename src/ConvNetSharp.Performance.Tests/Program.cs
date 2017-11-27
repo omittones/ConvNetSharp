@@ -67,7 +67,7 @@ namespace ConvNetSharp.Performance.Tests
                 net.AddLayer(new ReluLayer());
             }
             net.AddLayer(new FullyConnLayer(output));
-            net.AddLayer(new SoftmaxLayer(output));
+            net.AddLayer(new SoftmaxLayer());
             return net;
         }
 
