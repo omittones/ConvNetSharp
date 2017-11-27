@@ -959,9 +959,9 @@ namespace ConvNetSharp.Volume.Tests
 
             number = volume.Get(0, 0, 0);
             AssertNumber.AreEqual(zero, number);
-            number = volume.Get(0, 1, 0);
-            AssertNumber.AreEqual(one, number);
             number = volume.Get(1, 0, 0);
+            AssertNumber.AreEqual(one, number);
+            number = volume.Get(0, 1, 0);
             AssertNumber.AreEqual(two, number);
             number = volume.Get(1, 1, 0);
             AssertNumber.AreEqual(three, number);
