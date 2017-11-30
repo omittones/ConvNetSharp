@@ -239,14 +239,7 @@ namespace ConvNetSharp.Volume.GPU.Double
                 }
             }
 
-            if (this._originalStorage == null)
-            {
-                this.DeviceBuffer?.Dispose();
-            }
-            else
-            {
-                this.DeviceBuffer = null;
-            }
+            this.DeviceBuffer?.Dispose();
 
             this.ConvolutionBackwardFilterStorage?.Dispose();
             this.ConvolutionBackwardStorage?.Dispose();
