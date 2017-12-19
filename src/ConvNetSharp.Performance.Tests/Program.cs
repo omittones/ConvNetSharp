@@ -28,13 +28,13 @@ namespace ConvNetSharp.Performance.Tests
             var gpuVolumeBuilder = new Volume.GPU.Double.VolumeBuilder();
             var cpuVolumeBuilder = new Volume.Double.VolumeBuilder();
 
-            const int nmSets = 2000;
+            const int nmSets = 400;
             const int nmIterations = 10;
-            var input = Shape.From(100, 1, 1);
+            var input = Shape.From(20, 1, 1);
             var output = 3;
 
             int prevBatchSize = 0;
-            for (var batchSize = 10; batchSize < 400; batchSize = (int)(batchSize * 1.2))
+            for (var batchSize = 10; batchSize < nmSets; batchSize = (int)(batchSize * 1.2))
             {
                 if (prevBatchSize == batchSize)
                     batchSize += 1;
@@ -43,11 +43,11 @@ namespace ConvNetSharp.Performance.Tests
                 Console.WriteLine($"-- {nameof(batchSize)} == {batchSize} ------------------");
 
                 BuilderInstance<double>.Volume = cpuVolumeBuilder;
-                var testNet = Create(input, output, 100);
+                var testNet = Create(input, output, 50, 30);
                 ExecuteNeuralNet("CPU", testNet, batchSize, nmSets, nmIterations);
 
                 BuilderInstance<double>.Volume = gpuVolumeBuilder;
-                var gpuTestNet = Create(input, output, 100);
+                var gpuTestNet = Create(input, output, 50, 30);
                 ExecuteNeuralNet("GPU", gpuTestNet, batchSize, nmSets, nmIterations);
             }
         }
