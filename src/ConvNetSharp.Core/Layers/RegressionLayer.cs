@@ -23,7 +23,7 @@ namespace ConvNetSharp.Core.Layers
         {
         }
 
-        public override LayerBase<T> Clone()
+		public override LayerBase<T> Clone()
         {
             return new RegressionLayer<T>();
         }
@@ -37,17 +37,17 @@ namespace ConvNetSharp.Core.Layers
             this.OutputDepth = inputDepth;
         }
 
-        public override void Backward(Volume<T> y)
+        public override void Backward(Volume<T> outputGradient)
         {
             T unused;
-            Backward(y, out unused);
+            Backward(outputGradient, out unused);
         }
 
         public override void Backward(Volume<T> y, out T loss)
         {
-            var yAdjusted = y.ReShape(new Shape(1, 1, -1, Shape.Keep));
-            var inputActGrad = this.InputActivationGradients.ReShape(this.OutputActivation.Shape);
-            yAdjusted.DoSubtractFrom(this.OutputActivation, inputActGrad);
+            var reshape = y.ReShape(new Shape(1, 1, -1, Shape.Keep));
+            var dy = this.InputActivationGradients.ReShape(this.OutputActivation.Shape);
+            reshape.DoSubtractFrom(this.OutputActivation, dy);
 
             if (this._result == null ||
                 this._result.Shape.GetDimension(3) != this.OutputActivation.Shape.GetDimension(3))
@@ -57,7 +57,7 @@ namespace ConvNetSharp.Core.Layers
             }
 
             this._sum.Clear();
-            inputActGrad.DoMultiply(inputActGrad, this._result); // dy * dy
+            dy.DoMultiply(dy, this._result); // dy * dy
             var half = Ops<T>.Cast(0.5);
             this._result.DoMultiply(this._result, half); // dy * dy * 0.5
             this._result.DoSum(this._sum); // sum over all batch
