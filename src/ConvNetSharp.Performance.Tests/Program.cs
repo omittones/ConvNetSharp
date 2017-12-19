@@ -40,15 +40,15 @@ namespace ConvNetSharp.Performance.Tests
                     batchSize += 1;
                 prevBatchSize = batchSize;
 
-                Console.WriteLine($"-- {nameof(prevBatchSize)} == {prevBatchSize} ------------------");
+                Console.WriteLine($"-- {nameof(batchSize)} == {batchSize} ------------------");
 
                 BuilderInstance<double>.Volume = cpuVolumeBuilder;
                 var testNet = Create(input, output, 100);
-                ExecuteNeuralNet("CPU", testNet, prevBatchSize, nmSets, nmIterations);
+                ExecuteNeuralNet("CPU", testNet, batchSize, nmSets, nmIterations);
 
                 BuilderInstance<double>.Volume = gpuVolumeBuilder;
                 var gpuTestNet = Create(input, output, 100);
-                ExecuteNeuralNet("GPU", gpuTestNet, prevBatchSize, nmSets, nmIterations);
+                ExecuteNeuralNet("GPU", gpuTestNet, batchSize, nmSets, nmIterations);
             }
         }
 
