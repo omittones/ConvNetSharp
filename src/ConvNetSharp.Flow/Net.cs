@@ -106,5 +106,15 @@ namespace ConvNetSharp.Flow
         {
             return new Layers.InputLayer<T>();
         }
+
+        public INet<T> Clone()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void CopyParameters(INet<T> to)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

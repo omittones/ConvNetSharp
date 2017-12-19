@@ -64,7 +64,7 @@ namespace ConvNetSharp.Flow.Tests
             netCore.AddLayer(new Core.Layers.PoolLayer<T>(2, 2) { Stride = 2 });
             var fullyConnLayerCore = new Core.Layers.FullyConnLayer<T>(10);
             netCore.AddLayer(fullyConnLayerCore);
-            netCore.AddLayer(new Core.Layers.SoftmaxLayer<T>(10));
+            netCore.AddLayer(new Core.Layers.SoftmaxLayer<T>());
 
             var trainerCore = new Core.Training.SgdTrainer<T>(netCore)
             {

@@ -39,7 +39,7 @@ namespace MnistDemo
             this._net.AddLayer(new ReluLayer());
             this._net.AddLayer(new PoolLayer(3, 3) { Stride = 3 });
             this._net.AddLayer(new FullyConnLayer(10));
-            this._net.AddLayer(new SoftmaxLayer(10));
+            this._net.AddLayer(new SoftmaxLayer());
 
             this._trainer = new SgdTrainer<double>(this._net)
             {

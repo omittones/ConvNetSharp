@@ -152,7 +152,7 @@ namespace ConvNetSharp.Comparison
                 net.AddLayer(new B.Layers.ReluLayer<double>());
             }
             net.AddLayer(new B.Layers.FullyConnLayer<double>(nmOutputs));
-            net.AddLayer(new B.Layers.SoftmaxLayer<double>(nmOutputs));
+            net.AddLayer(new B.Layers.SoftmaxLayer<double>());
             return net;
         }
     }

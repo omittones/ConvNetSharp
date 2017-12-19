@@ -45,7 +45,7 @@ namespace MnistDemo.GPU
             this._net.AddLayer(new ReluLayer());
             this._net.AddLayer(new PoolLayer(3, 3) { Stride = 3 });
             this._net.AddLayer(new FullyConnLayer(10));
-            this._net.AddLayer(new SoftmaxLayer(10));
+            this._net.AddLayer(new SoftmaxLayer());
 
             // Fluent version
             //        this._net = FluentNet<float>.Create(24, 24, 1)
