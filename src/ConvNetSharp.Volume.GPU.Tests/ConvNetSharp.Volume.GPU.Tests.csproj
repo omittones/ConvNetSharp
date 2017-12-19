@@ -68,7 +68,7 @@
       <Name>ConvNetSharp.Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\ConvNetSharp.Volume.GPU\ConvNetSharp.Volume.GPU.csproj">
-      <Project>{b21866c4-d0eb-4e39-ae90-2b88fcc5c2b0}</Project>
+      <Project>{608c97db-721f-4b34-be2d-01a85b762be9}</Project>
       <Name>ConvNetSharp.Volume.GPU</Name>
     </ProjectReference>
     <ProjectReference Include="..\ConvNetSharp.Volume\ConvNetSharp.Volume.csproj">

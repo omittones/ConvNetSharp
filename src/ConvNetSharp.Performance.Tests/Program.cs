@@ -33,25 +33,22 @@ namespace ConvNetSharp.Performance.Tests
             var input = Shape.From(100, 1, 1);
             var output = 3;
 
-            int batchSize = 0;
-            for (var testBatchSize = 50.0; testBatchSize < 200.0; testBatchSize = testBatchSize * 1.05)
+            int prevBatchSize = 0;
+            for (var batchSize = 10; batchSize < 400; batchSize = (int)(batchSize * 1.2))
             {
-                if (batchSize != (int)testBatchSize)
-                {
-                    batchSize = (int)testBatchSize;
+                if (prevBatchSize == batchSize)
+                    batchSize += 1;
+                prevBatchSize = batchSize;
 
-                    Console.WriteLine($"-- {nameof(batchSize)} == {batchSize} ------------------");
+                Console.WriteLine($"-- {nameof(prevBatchSize)} == {prevBatchSize} ------------------");
 
-                    //BuilderInstance<double>.Volume = cpuVolumeBuilder;
-                    //var testNet = Create(input, output, 1000);
-                    //ExecuteNeuralNet("CPU", testNet, batchSize, nmSets, nmIterations);
+                BuilderInstance<double>.Volume = cpuVolumeBuilder;
+                var testNet = Create(input, output, 100);
+                ExecuteNeuralNet("CPU", testNet, prevBatchSize, nmSets, nmIterations);
 
-                    BuilderInstance<double>.Volume = gpuVolumeBuilder;
-                    var gpuTestNet = Create(input, output, 100);
-                    ExecuteNeuralNet("GPU", gpuTestNet, batchSize, nmSets, nmIterations);
-
-                    Console.WriteLine();
-                }
+                BuilderInstance<double>.Volume = gpuVolumeBuilder;
+                var gpuTestNet = Create(input, output, 100);
+                ExecuteNeuralNet("GPU", gpuTestNet, prevBatchSize, nmSets, nmIterations);
             }
         }
 
@@ -123,7 +120,6 @@ namespace ConvNetSharp.Performance.Tests
             trainer.Momentum = 0.5;
             trainer.L1Decay = 0.01;
             trainer.L2Decay = 0.01;
-            trainer.BatchSize = batchSize;
 
             for (var i = 0; i < iterations; i++)
             {
