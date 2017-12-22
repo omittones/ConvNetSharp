@@ -2,25 +2,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using ConvNetSharp.Core;
 using ConvNetSharp.Core.Layers.Double;
 using ConvNetSharp.Core.Training.Double;
 using ConvNetSharp.Volume;
 
 namespace ConvNetSharp.Performance.Tests
 {
-    public class TestNet : Net<double>
-    {
-        public Shape[] InputShape { get; set; }
-        public Shape OutputShape { get; set; }
-    }
-
-    public class Set
-    {
-        public Volume<double>[] Inputs { get; set; }
-        public Volume<double> Outputs { get; set; }
-    }
-
     public static class Program
     {
         public static void Main(string[] args)
