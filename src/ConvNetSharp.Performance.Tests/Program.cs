@@ -8,6 +8,15 @@ using ConvNetSharp.Volume;
 
 namespace ConvNetSharp.Performance.Tests
 {
+    public struct Result
+    {
+        internal long IterationTimeMs;
+        internal long TotalTimeMs;
+        internal double ForwardTimeMs;
+        internal double BackwardTimeMs;
+        internal double UpdateWeightsMs;
+    }
+
     public static class Program
     {
         public static void Main(string[] args)
@@ -17,11 +26,11 @@ namespace ConvNetSharp.Performance.Tests
 
             const int nmSets = 400;
             const int nmIterations = 10;
-            var input = Shape.From(20, 1, 1);
-            var output = 3;
+            var input = Shape.From(40, 1, 1);
+            var output = 4;
 
             int prevBatchSize = 0;
-            for (var batchSize = 10; batchSize < nmSets; batchSize = (int)(batchSize * 1.2))
+            for (var batchSize = 20; batchSize < nmSets; batchSize = (int)(batchSize * 1.2))
             {
                 if (prevBatchSize == batchSize)
                     batchSize += 1;
@@ -30,16 +39,18 @@ namespace ConvNetSharp.Performance.Tests
                 Console.WriteLine($"-- {nameof(batchSize)} == {batchSize} ------------------");
 
                 BuilderInstance<double>.Volume = cpuVolumeBuilder;
-                var testNet = Create(input, output, 50, 30);
-                ExecuteNeuralNet("CPU", testNet, batchSize, nmSets, nmIterations);
+                var cpuTestNet = CreateNet(input, output, 50, 30);
+                var cpuResult = ExecuteNet(cpuTestNet, batchSize, nmSets, nmIterations);
 
                 BuilderInstance<double>.Volume = gpuVolumeBuilder;
-                var gpuTestNet = Create(input, output, 50, 30);
-                ExecuteNeuralNet("GPU", gpuTestNet, batchSize, nmSets, nmIterations);
+                var gpuTestNet = CreateNet(input, output, 50, 30);
+                var gpuResult = ExecuteNet(gpuTestNet, batchSize, nmSets, nmIterations);
+
+                DisplayResult(cpuResult, gpuResult);
             }
         }
 
-        private static TestNet Create(Shape input, int output, params int[] layerSizes)
+        private static TestNet CreateNet(Shape input, int output, params int[] layerSizes)
         {
             var net = new TestNet();
             net.InputShape = new[] { Shape.From(input) };
@@ -53,6 +64,43 @@ namespace ConvNetSharp.Performance.Tests
             net.AddLayer(new FullyConnLayer(output));
             net.AddLayer(new SoftmaxLayer());
             return net;
+        }
+
+        private static Result ExecuteNet(
+            TestNet net,
+            int batchSize,
+            int totalSets,
+            int iterations)
+        {
+            var inputs = CreateSampleSets(net, batchSize, totalSets);
+
+            var stopWatch = new Stopwatch();
+            stopWatch.Restart();
+
+            var trainer = new SgdTrainer(net);
+            trainer.LearningRate = 0.01;
+            trainer.Momentum = 0.5;
+            trainer.L1Decay = 0.01;
+            trainer.L2Decay = 0.01;
+
+            for (var i = 0; i < iterations; i++)
+            {
+                foreach (var set in inputs)
+                {
+                    trainer.Train(set.Inputs[0], set.Outputs);
+                }
+            }
+
+            stopWatch.Stop();
+
+            return new Result
+            {
+                IterationTimeMs = stopWatch.ElapsedMilliseconds / iterations,
+                TotalTimeMs = stopWatch.ElapsedMilliseconds,
+                ForwardTimeMs = trainer.ForwardTimeMs,
+                BackwardTimeMs = trainer.BackwardTimeMs,
+                UpdateWeightsMs = trainer.UpdateWeightsTimeMs
+            };
         }
 
         public static Set[] CreateSampleSets(
@@ -89,40 +137,17 @@ namespace ConvNetSharp.Performance.Tests
             return sets.ToArray();
         }
 
-        private static void ExecuteNeuralNet(
-            string name,
-            TestNet net,
-            int batchSize,
-            int totalSets,
-            int iterations)
+
+        private static void DisplayResult(Result proc, Result gpu)
         {
-            var inputs = CreateSampleSets(net, batchSize, totalSets);
-
-            var stopWatch = new Stopwatch();
-            Console.WriteLine($"- {name} ------");
-            stopWatch.Restart();
-
-            var trainer = new SgdTrainer(net);
-            trainer.LearningRate = 0.01;
-            trainer.Momentum = 0.5;
-            trainer.L1Decay = 0.01;
-            trainer.L2Decay = 0.01;
-
-            for (var i = 0; i < iterations; i++)
-            {
-                foreach (var set in inputs)
-                {
-                    trainer.Train(set.Inputs[0], set.Outputs);
-                }
-            }
-
-            stopWatch.Stop();
-
-            Console.WriteLine("iteration: {0:0.000}ms", stopWatch.ElapsedMilliseconds / iterations);
-            Console.WriteLine("    total: {0:0.000}ms", stopWatch.ElapsedMilliseconds);
-            Console.WriteLine("  forward: {0:0.000}ms", trainer.ForwardTimeMs);
-            Console.WriteLine(" backward: {0:0.000}ms", trainer.BackwardTimeMs);
-            Console.WriteLine("   update: {0:0.000}ms", trainer.UpdateWeightsTimeMs);
+            Console.WriteLine("                 CPU    |        GPU   ");
+            Console.WriteLine("------------------------+--------------");
+            Console.WriteLine("iteration: {0,10:0.000}ms | {1,10:0.000}ms", proc.IterationTimeMs, gpu.IterationTimeMs);
+            Console.WriteLine("    total: {0,10:0.000}ms | {1,10:0.000}ms", proc.TotalTimeMs, gpu.TotalTimeMs);
+            Console.WriteLine("  forward: {0,10:0.000}ms | {1,10:0.000}ms", proc.ForwardTimeMs, gpu.ForwardTimeMs);
+            Console.WriteLine(" backward: {0,10:0.000}ms | {1,10:0.000}ms", proc.BackwardTimeMs, gpu.BackwardTimeMs);
+            Console.WriteLine("   update: {0,10:0.000}ms | {1,10:0.000}ms", proc.UpdateWeightsMs, gpu.UpdateWeightsMs);
+            Console.WriteLine();
         }
     }
 }
