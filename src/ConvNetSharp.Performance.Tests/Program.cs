@@ -26,8 +26,9 @@ namespace ConvNetSharp.Performance.Tests
 
             const int nmSets = 400;
             const int nmIterations = 10;
-            var input = Shape.From(40, 1, 1);
-            var output = 4;
+            var inputShape = Shape.From(40, 1, 1);
+            var outputShape = Shape.From(1, 1, 4);
+            var layerSizes = new[] { 100, 50 };
 
             int prevBatchSize = 0;
             for (var batchSize = 20; batchSize < nmSets; batchSize = (int)(batchSize * 1.2))
@@ -39,29 +40,29 @@ namespace ConvNetSharp.Performance.Tests
                 Console.WriteLine($"-- {nameof(batchSize)} == {batchSize} ------------------");
 
                 BuilderInstance<double>.Volume = cpuVolumeBuilder;
-                var cpuTestNet = CreateNet(input, output, 50, 30);
+                var cpuTestNet = CreateNet(inputShape, outputShape, layerSizes);
                 var cpuResult = ExecuteNet(cpuTestNet, batchSize, nmSets, nmIterations);
 
                 BuilderInstance<double>.Volume = gpuVolumeBuilder;
-                var gpuTestNet = CreateNet(input, output, 50, 30);
+                var gpuTestNet = CreateNet(inputShape, outputShape, layerSizes);
                 var gpuResult = ExecuteNet(gpuTestNet, batchSize, nmSets, nmIterations);
 
                 DisplayResult(cpuResult, gpuResult);
             }
         }
 
-        private static TestNet CreateNet(Shape input, int output, params int[] layerSizes)
+        private static TestNet CreateNet(Shape input, Shape output, params int[] layerSizes)
         {
             var net = new TestNet();
             net.InputShape = new[] { Shape.From(input) };
-            net.OutputShape = Shape.From(1, 1, output);
+            net.OutputShape = output;
             net.AddLayer(new InputLayer(input.GetDimension(0), input.GetDimension(1), input.GetDimension(2)));
             for (var i = 0; i < layerSizes.Length; i++)
             {
                 net.AddLayer(new FullyConnLayer(layerSizes[i]));
                 net.AddLayer(new ReluLayer());
             }
-            net.AddLayer(new FullyConnLayer(output));
+            net.AddLayer(new FullyConnLayer((int)output.TotalLength));
             net.AddLayer(new SoftmaxLayer());
             return net;
         }
