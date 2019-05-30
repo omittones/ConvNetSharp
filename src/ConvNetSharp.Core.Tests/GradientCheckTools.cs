@@ -77,7 +77,9 @@ namespace ConvNetSharp.Core.Tests
             // Backward pass to retrieve gradients
             layer.Backward(outputGradient);
 
-            List<ParametersAndGradients<double>> paramsAndGrads = layer.GetParametersAndGradients();
+            var paramsAndGrads = layer
+                .GetParametersAndGradients()
+                .ToArray();
 
             foreach (var paramAndGrad in paramsAndGrads)
             {

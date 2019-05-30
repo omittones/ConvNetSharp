@@ -63,10 +63,9 @@ namespace MnistDemo.GPU
             var valiationImages = trainImages.GetRange(trainImages.Count - validationSize, validationSize);
             trainImages = trainImages.GetRange(0, trainImages.Count - validationSize);
 
-            if (trainImages.Count == 0 || valiationImages.Count == 0 || testingImages.Count == 0)
+            if (trainImages.Count + valiationImages.Count + testingImages.Count == 0)
             {
                 Console.WriteLine("Missing Mnist training/testing files.");
-                Console.ReadKey();
                 return false;
             }
 

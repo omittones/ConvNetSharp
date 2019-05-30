@@ -5,19 +5,36 @@ using ConvNetSharp.Volume.GPU.Single;
 
 namespace MnistDemo.GPU
 {
+    public class Batch : Tuple<Volume<float>, Volume<float>, int[]>
+    {
+        public bool Final { get; set; }
+        public Batch(Volume<float> x, Volume<float> y, int[] labels) : base(x, y, labels)
+        {
+        }
+    }
+
     internal class DataSet
     {
+        private int start;
         private readonly Random _random = new Random(RandomUtilities.Seed);
-        private readonly List<MnistEntry> _trainImages;
-        private int _epochCompleted;
-        private int _start;
+        private readonly List<MnistEntry> trainImages;
 
         public DataSet(List<MnistEntry> trainImages)
         {
-            this._trainImages = trainImages;
+            this.trainImages = trainImages;
+
+            for (var i = this.trainImages.Count - 1; i >= 0; i--)
+            {
+                var j = this._random.Next(i);
+                var temp = this.trainImages[j];
+                this.trainImages[j] = this.trainImages[i];
+                this.trainImages[i] = temp;
+            }
         }
 
-        public Tuple<Volume<float>, Volume<float>, int[]> NextBatch(int batchSize)
+        public int Count => this.trainImages.Count;
+
+        public Batch NextBatch(int batchSize, Batch old = null)
         {
             const int w = 28;
             const int h = 28;
@@ -25,27 +42,26 @@ namespace MnistDemo.GPU
 
             var dataShape = new Shape(w, h, 1, batchSize);
             var labelShape = new Shape(1, 1, numClasses, batchSize);
-            var data = new float[dataShape.TotalLength];
-            var label = new float[labelShape.TotalLength];
             var labels = new int[batchSize];
 
-            // Shuffle for the first epoch
-            if (this._start == 0 && this._epochCompleted == 0)
+            Volume<float> dataVolume;
+            Volume<float> labelVolume;
+            if (old != null && old.Item1.Shape.Equals(dataShape))
             {
-                for (var i = this._trainImages.Count - 1; i >= 0; i--)
-                {
-                    var j = this._random.Next(i);
-                    var temp = this._trainImages[j];
-                    this._trainImages[j] = this._trainImages[i];
-                    this._trainImages[i] = temp;
-                }
+                dataVolume = old.Item1;
+                labelVolume = old.Item2;
+                labelVolume.Clear();
+            }
+            else
+            {
+                dataVolume = BuilderInstance.Volume.SameAs(dataShape);
+                labelVolume = BuilderInstance.Volume.SameAs(labelShape);
             }
 
-            var dataVolume = BuilderInstance.Volume.From(data, dataShape);
-
+            bool final = false;
             for (var i = 0; i < batchSize; i++)
             {
-                var entry = this._trainImages[this._start];
+                var entry = this.trainImages[this.start];
 
                 labels[i] = entry.Label;
 
@@ -57,22 +73,21 @@ namespace MnistDemo.GPU
                         dataVolume.Set(x, y, 0, i, entry.Image[j++] / 255.0f);
                     }
                 }
+                                
+                labelVolume.Set(0, 0, entry.Label, i, 1.0f);
 
-                label[i * numClasses + entry.Label] = 1.0f;
-
-                this._start++;
-                if (this._start == this._trainImages.Count)
+                this.start++;
+                if (this.start == this.trainImages.Count)
                 {
-                    this._start = 0;
-                    this._epochCompleted++;
-                    Console.WriteLine($"Epoch #{this._epochCompleted}");
+                    this.start = 0;
+                    final = true;
                 }
-            }
+            }            
 
-
-            var labelVolume = BuilderInstance.Volume.From(label, labelShape);
-
-            return new Tuple<Volume<float>, Volume<float>, int[]>(dataVolume, labelVolume, labels);
+            return new Batch(dataVolume, labelVolume, labels)
+            {
+                Final = final
+            };
         }
     }
 }

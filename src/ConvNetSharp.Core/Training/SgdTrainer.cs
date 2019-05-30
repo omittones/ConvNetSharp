@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using ConvNetSharp.Volume;
 
 namespace ConvNetSharp.Core.Training
@@ -37,7 +38,10 @@ namespace ConvNetSharp.Core.Training
 
         protected override void TrainImplem()
         {
-            var parametersAndGradients = this.Net.GetParametersAndGradients();
+            var parametersAndGradients = this.Net
+                .GetParametersAndGradients()
+                .ToArray();
+
             var isMomentumGreaterThanZero = Ops<T>.GreaterThan(this.Momentum, Ops<T>.Zero);
 
             // initialize lists for accumulators. Will only be done once on first iteration
@@ -51,7 +55,7 @@ namespace ConvNetSharp.Core.Training
             }
 
             // perform an update for all sets of weights
-            for (var i = 0; i < parametersAndGradients.Count; i++)
+            for (var i = 0; i < parametersAndGradients.Length; i++)
             {
                 var parametersAndGradient = parametersAndGradients[i];
                 var parameters = parametersAndGradient.Volume;

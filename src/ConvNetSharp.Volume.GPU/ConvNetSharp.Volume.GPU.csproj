@@ -50,12 +50,10 @@
       </EmbeddedResource>
     </ItemGroup>
     <ItemGroup>
-      <PackageReference Include="ManagedCuda-CUBLAS.NETStandard" Version="9.1.300" />
-      <PackageReference Include="ManagedCuda-CudaDNN.NETStandard" Version="9.1.300" />
-      <PackageReference Include="ManagedCuda-NVRTC.NETStandard" Version="9.1.300" />
-      <PackageReference Include="ManagedCuda.NETStandard" Version="9.1.300" />
-    </ItemGroup>
-    <ItemGroup>
+      <ProjectReference Include="..\..\..\..\managedCuda\CudaBlas\CudaBlas.csproj" />
+      <ProjectReference Include="..\..\..\..\managedCuda\CudaDNN\CudaDNN.csproj" />
+      <ProjectReference Include="..\..\..\..\managedCuda\ManagedCUDA\ManagedCUDA.csproj" />
+      <ProjectReference Include="..\..\..\..\managedCuda\NVRTC\NVRTC.csproj" />
       <ProjectReference Include="..\ConvNetSharp.Volume\ConvNetSharp.Volume.csproj" />
     </ItemGroup>
     <ItemGroup>
