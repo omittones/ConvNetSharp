@@ -16,5 +16,9 @@ namespace ConvNetSharp.Core
         List<ParametersAndGradients<T>> GetParametersAndGradients();
 
         int[] GetPrediction();
+
+        INet<T> Clone();
+
+        void CopyParameters(INet<T> to);
     }
 }

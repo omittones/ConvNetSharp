@@ -14,6 +14,11 @@ namespace ConvNetSharp.Core.Layers
         {
         }
 
+        public override LayerBase<T> Clone()
+        {
+            return new SigmoidLayer<T>();
+        }
+
         public override void Backward(Volume<T> outputGradient)
         {
             this.OutputActivationGradients = outputGradient;

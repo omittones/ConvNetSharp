@@ -128,6 +128,8 @@ namespace ConvNetSharp.Volume
 
         public abstract void Set(int i, T value);
 
+        public abstract void Set(T[] values);
+
         public abstract T[] ToArray();
     }
 }

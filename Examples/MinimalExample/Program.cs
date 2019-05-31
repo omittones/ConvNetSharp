@@ -29,7 +29,7 @@ namespace MinimalExample
             net.AddLayer(new FullyConnLayer(10));
 
             // declare the linear classifier on top of the previous hidden layer
-            net.AddLayer(new SoftmaxLayer(10));
+            net.AddLayer(new SoftmaxLayer());
 
             // forward a random data point through the network
             var x =  BuilderInstance.Volume.From(new[] { 0.3, -0.5 }, new Shape(2));

@@ -9,6 +9,21 @@ namespace ConvNetSharp.Core.Layers
         private int _pad;
         private int _stride = 2;
 
+        public override LayerBase<T> Clone()
+        {
+            return new PoolLayer<T>(this.Width, this.Height)
+            {
+                Stride = this.Stride,
+                Pad = this.Pad
+            };
+        }
+
+        public PoolLayer(int width, int height)
+        {
+            this.Width = width;
+            this.Height = height;
+        }
+
         public PoolLayer(Dictionary<string, object> data) : base(data)
         {
             this.Width =  Convert.ToInt32(data["Width"]);
@@ -16,12 +31,6 @@ namespace ConvNetSharp.Core.Layers
             this.Pad =  Convert.ToInt32(data["Pad"]);
             this.Stride =  Convert.ToInt32(data["Stride"]);
             this.IsInitialized = true;
-        }
-
-        public PoolLayer(int width, int height)
-        {
-            this.Width = width;
-            this.Height = height;
         }
 
         public int Width { get; }

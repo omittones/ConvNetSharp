@@ -1,10 +1,12 @@
-﻿using System;
+﻿using ConvNetSharp.Volume;
+using System;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 
 namespace ConvNetSharp.Core
 {
-    public class Ops<T> where T : struct, IEquatable<T>
+    public class Ops<T> where T : struct, IEquatable<T>, IFormattable
     {
         public static readonly Func<T, T, T> Add;
 
@@ -34,8 +36,27 @@ namespace ConvNetSharp.Core
 
         public static readonly Func<T, bool> IsInvalid;
 
+        public static bool SkipValidation { get; set; }
+
+        public static void Validate(Volume<T> volume)
+        {
+            if (!SkipValidation)
+            {
+                var items = volume.Storage.ToArray();
+                for (var i = 0; i < items.Length; i++)
+                    if (IsInvalid(items[i]))
+                        throw new ArgumentException("Invalid input!");
+            }
+        }
+
         static Ops()
         {
+#if DEBUG
+            SkipValidation = false;
+#else
+            SkipValidation = true;
+#endif
+
             var firstOperand = Expression.Parameter(typeof(T), "x");
             var secondOperand = Expression.Parameter(typeof(T), "y");
 

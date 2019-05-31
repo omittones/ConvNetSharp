@@ -1485,5 +1485,46 @@ namespace ConvNetSharp.Volume.Tests
             nonZeroEntry = array.First(o => !o.Equals(Ops<T>.Zero));
             AssertNumber.AreEqual(gradient / (1 - dropProb), nonZeroEntry, 1e-6);
         }
+
+        [TestMethod]
+        public void Reshape()
+        {
+            var zero = Ops<T>.Zero;
+            var one = Ops<T>.One;
+            var two = Ops<T>.Cast(2);
+            var three = Ops<T>.Cast(3);
+
+            var volume = NewVolume(new double[4].Populate(1.0), new Shape(2, 2, 1));
+
+            var number = volume.Get(0, 0, 0);
+            AssertNumber.AreEqual(1.0, number);
+            number = volume.Get(1, 1, 0);
+            AssertNumber.AreEqual(1.0, number);
+
+            var reshaped = volume.ReShape(1, 1, -1);
+            reshaped.Set(0, zero);
+            reshaped.Set(1, one);
+            reshaped.Set(2, two);
+            reshaped.Set(3, three);
+
+            number = reshaped.Get(0);
+            AssertNumber.AreEqual(zero, number);
+            number = reshaped.Get(1);
+            AssertNumber.AreEqual(one, number);
+            number = reshaped.Get(2);
+            AssertNumber.AreEqual(two, number);
+            number = reshaped.Get(3);
+            AssertNumber.AreEqual(three, number);
+
+
+            number = volume.Get(0, 0, 0);
+            AssertNumber.AreEqual(zero, number);
+            number = volume.Get(1, 0, 0);
+            AssertNumber.AreEqual(one, number);
+            number = volume.Get(0, 1, 0);
+            AssertNumber.AreEqual(two, number);
+            number = volume.Get(1, 1, 0);
+            AssertNumber.AreEqual(three, number);
+        }
     }
 }
