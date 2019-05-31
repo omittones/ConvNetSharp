@@ -45,10 +45,7 @@ namespace MnistDemo.GPU
             this.net.AddLayer(new FullyConnLayer(10));
             this.net.AddLayer(new SoftmaxLayer(10));
 
-            this._trainer = new AdamTrainer(this.net)
-            {
-                BatchSize = 500
-            };
+            this._trainer = new AdamTrainer(this.net);
 
             var random = new Random();
             var @params = this.net.GetParametersAndGradients().ToArray();
@@ -71,7 +68,7 @@ namespace MnistDemo.GPU
             int epoch = 0;
             do
             {
-                sample = datasets.Train.NextBatch(this._trainer.BatchSize, sample);
+                sample = datasets.Train.NextBatch(500, sample);
                 var loss = Train(sample);
 
                 currentSamples += sample.Item3.Length;

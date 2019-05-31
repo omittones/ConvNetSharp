@@ -46,7 +46,6 @@ namespace ConvNetSharp.Comparison
 
             var bTrainer = new B.Training.SgdTrainer<double>(bNet)
             {
-                BatchSize = BATCH_SIZE,
                 LearningRate = LEARN_RATE,
                 Momentum = MOMENTUM
             };

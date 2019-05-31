@@ -36,7 +36,7 @@ namespace ConvNetSharp.Core.Training
             }
         }
 
-        protected override void TrainImplem()
+        protected override void TrainImplem(int batchSize)
         {
             var parametersAndGradients = this.Net
                 .GetParametersAndGradients()
@@ -62,7 +62,7 @@ namespace ConvNetSharp.Core.Training
                 var gradients = parametersAndGradient.Gradient;
                 var velocity = this.velocities[i];
 
-                var batchAdjustedLearningRate = Ops<T>.Divide(this.LearningRate, Ops<T>.Cast(this.BatchSize));
+                var batchAdjustedLearningRate = Ops<T>.Divide(this.LearningRate, Ops<T>.Cast(batchSize));
 
                 // delta = gradient + regularization;
                 gradients.Multiply(batchAdjustedLearningRate, gradients);

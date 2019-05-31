@@ -191,8 +191,6 @@ namespace ConvNetSharp.Core.Training
 
         private double learnFromExperience(double[] s0, int a0, double r0, double[] s1)
         {
-            this.BatchSize = 1;
-
             // want: Q(s,a) = r + gamma * max_a' Q(s',a')
             // compute the target Q value (current reward + gamma * next reward)
             if (Gamma != 0)
@@ -228,7 +226,7 @@ namespace ConvNetSharp.Core.Training
             //propagate errors
             this.Backward(expected); // compute gradients on net params
 
-            TrainImplem();
+            TrainImplem(1);
 
             return Math.Abs(error);
         }

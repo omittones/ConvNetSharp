@@ -295,10 +295,9 @@ namespace ConvNetSharp.Volume
         public void SetDimension(int index, int dimension)
         {
             if (index < 0)
-            {
-                throw new ArgumentException("index cannot be negative", nameof(index));
-            }
-
+                index += this.Dimensions.Length;
+            if (index < 0)
+                index = 0;
             this.Dimensions[index] = dimension;
             UpdateTotalLength();
         }

@@ -41,5 +41,88 @@ namespace ConvNetSharp.Core.Tests
             Assert.AreEqual(0, second.State[1]);
             Assert.AreEqual(0, second.State[2]);
         }
+
+        [TestMethod]
+        public void GradientsAccumulate()
+        {
+            var net = new Net<double>();
+            net.AddLayer(new InputLayer<double>(2, 2, 2));
+            net.AddLayer(new FullyConnLayer<double>(10));
+            net.AddLayer(new LeakyReluLayer<double>(0.3));
+            net.AddLayer(new FullyConnLayer<double>(5));
+            net.AddLayer(new LeakyReluLayer<double>(0.3));
+            net.AddLayer(new FullyConnLayer<double>(2));
+            net.AddLayer(new SoftmaxLayer<double>(2));
+
+            net.Forward(new[] { 1, 2, 3, 4, 5, 6, 7, 8.0 }, true);
+            net.Backward(new[] { 0, 1.0 });
+
+            var firstBatch =
+                net.GetParametersAndGradients()
+                .SelectMany(e => e.Gradient.ToArray())
+                .ToArray();
+
+            foreach (var grad in firstBatch)
+                Assert.AreNotEqual(0, grad, double.Epsilon);
+
+            net.Forward(new[] { 1, 2, 3, 4, 5, 6, 7, 8.0 }, true);
+            net.Backward(new[] { 0, 1.0 });
+
+            var secondBatch =
+             net.GetParametersAndGradients()
+             .SelectMany(e => e.Gradient.ToArray())
+             .ToArray();
+
+            var factors = firstBatch
+                .Zip(secondBatch, (f, s) => s / f)
+                .ToArray();
+
+            foreach (var fact in factors)
+                Assert.AreEqual(2, fact, double.Epsilon);
+        }
+
+        [TestMethod]
+        public void GradientsScale()
+        {
+            var net = new Net<double>();
+            net.AddLayer(new InputLayer<double>(2, 2, 2));
+            net.AddLayer(new FullyConnLayer<double>(10));
+            net.AddLayer(new LeakyReluLayer<double>(0.3));
+            net.AddLayer(new FullyConnLayer<double>(5));
+            net.AddLayer(new LeakyReluLayer<double>(0.3));
+            net.AddLayer(new FullyConnLayer<double>(2));
+            var lastLayer = new SoftmaxLayer<double>(2);
+            net.AddLayer(lastLayer);
+
+            net.Forward(new[] { 1, 2, 3, 4, 5, 6, 7, 8.0 }, true);
+            net.Backward(new[] { 0.0, 1.0 });
+
+            var firstBatch =
+                net.GetParametersAndGradients()
+                .SelectMany(e => e.Gradient.ToArray())
+                .ToArray();
+
+            foreach (var grad in firstBatch)
+                Assert.AreNotEqual(0, grad, double.Epsilon);
+
+            net.GetParametersAndGradients()
+                .ForEach(g => g.Gradient.Clear());
+
+            lastLayer.GradientMultiplier = new[] { 1000.0 };
+            net.Forward(new[] { 1, 2, 3, 4, 5, 6, 7, 8.0 }, true);
+            net.Backward(new[] { 0.0, 1.0 });
+
+            var secondBatch =
+             net.GetParametersAndGradients()
+             .SelectMany(e => e.Gradient.ToArray())
+             .ToArray();
+
+            var factors = firstBatch
+                .Zip(secondBatch, (f, s) => s / f)
+                .ToArray();
+
+            foreach (var fact in factors)
+                Assert.AreEqual(1000.0, fact, 0.000001);
+        }
     }
 }

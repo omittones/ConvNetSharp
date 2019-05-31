@@ -19,14 +19,14 @@ namespace ConvNetSharp.Flow.Training
 
         public Op<T> Optimizer { get; set; }
 
-        protected override void TrainImplem()
+        protected override void TrainImplem(int batchSize)
         {
             throw new NotImplementedException();
         }
 
         public override Volume<T> Train(Volume<T> x, Volume<T> y)
         {
-            var batchSize = x.Shape.Dimensions[3];
+            var batchSize = x.BatchSize;
 
             this._dico["Y"] = y;
             this._dico["input"] = x;

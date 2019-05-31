@@ -25,10 +25,10 @@ namespace ConvNetSharp.Volume
 
         public Shape Shape => this.Storage.Shape;
 
-        public int BatchSize => this.Shape.Dimensions[0];
-        public int Width => this.Shape.Dimensions[this.Shape.Dimensions.Length - 3];
-        public int Height => this.Shape.Dimensions[this.Shape.Dimensions.Length - 2];
-        public int Depth => this.Shape.Dimensions[this.Shape.Dimensions.Length - 1];
+        public int BatchSize => this.Shape.Dimensions[this.Shape.Dimensions.Length - 1];
+        public int Width => this.Shape.Dimensions[0];
+        public int Height => this.Shape.Dimensions[1];
+        public int Depth => this.Shape.Dimensions[2];
 
         public virtual void Dispose()
         {
@@ -249,6 +249,18 @@ namespace ConvNetSharp.Volume
         public Volume<T> ReShape(params int[] dimensions)
         {
             return ReShape(Shape.From(dimensions));
+        }
+
+        public void CopyTo(Volume<T> destination, int batchStart)
+        {
+            for (var n = 0; n < this.BatchSize; n++)
+                for (var w = 0; w < this.Width; w++)
+                    for (var h = 0; h < this.Height; h++)
+                        for (var c = 0; c < this.Depth; c++)
+                        {
+                            var value = this.Get(w, h, c, n);
+                            destination.Set(w, h, c, batchStart + n, value);
+                        }
         }
 
         public void Set(int[] coordinates, T value)

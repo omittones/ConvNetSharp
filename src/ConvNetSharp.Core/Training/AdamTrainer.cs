@@ -37,7 +37,7 @@ namespace ConvNetSharp.Core.Training
 
         public T Eps { get; set; }
 
-        protected override void TrainImplem()
+        protected override void TrainImplem(int batchSize)
         {
             var parametersAndGradients = this.Net
                 .GetParametersAndGradients()
@@ -88,7 +88,7 @@ namespace ConvNetSharp.Core.Training
                 var temp2 = this.temp2[i];
                 var gradGrad = this.gradGrad[i];
 
-                grad.Multiply(Ops<T>.Divide(Ops<T>.One, Ops<T>.Cast(this.BatchSize)), grad); // grad *= 1 / BatchSize
+                grad.Multiply(Ops<T>.Divide(Ops<T>.One, Ops<T>.Cast(batchSize)), grad); // grad *= 1 / BatchSize
 
                 // momentum update
                 // update biased first moment estimate: gsum[i] = gsum[i] * Beta1 +  (1 - Beta1) * grad

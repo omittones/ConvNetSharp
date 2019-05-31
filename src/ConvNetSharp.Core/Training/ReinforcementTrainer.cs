@@ -56,9 +56,6 @@ namespace ConvNetSharp.Core.Training
 
         public void Reinforce(Volume<double> pathInputs, int[][] pathActions, double[] pathReturns)
         {
-            if (this.BatchSize != pathInputs.BatchSize)
-                throw new NotSupportedException("Mismatching sizes!");
-
             this.Forward(pathInputs);
 
             if (ApplyBaselineAndNormalizeReturns)
@@ -88,7 +85,7 @@ namespace ConvNetSharp.Core.Training
 
             var chrono = Stopwatch.StartNew();
 
-            TrainImplem();
+            TrainImplem(pathInputs.BatchSize);
 
             this.UpdateWeightsTimeMs = chrono.Elapsed.TotalMilliseconds / pathInputs.BatchSize;
         }

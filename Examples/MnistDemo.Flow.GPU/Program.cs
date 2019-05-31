@@ -61,12 +61,7 @@ namespace MnistDemo.GPU
             //           .Softmax()
             //           .Build();
 
-            this._trainer = new SgdTrainer<float>(this._net, 0.01f)
-            {
-                BatchSize = 1024,
-                //L2Decay = 0.001f,
-                //Momentum = 0.9f
-            };
+            this._trainer = new SgdTrainer<float>(this._net, 0.01f);
 
             if (File.Exists("loss.csv"))
             {
@@ -76,10 +71,12 @@ namespace MnistDemo.GPU
             Console.WriteLine("Convolutional neural network learning...[Press any key to stop]");
             do
             {
-                var trainSample = datasets.Train.NextBatch(this._trainer.BatchSize);
+                const int batchSize = 20;
+
+                var trainSample = datasets.Train.NextBatch(batchSize);
                 Train(trainSample.Item1, trainSample.Item2, trainSample.Item3);
 
-                var testSample = datasets.Test.NextBatch(this._trainer.BatchSize);
+                var testSample = datasets.Test.NextBatch(batchSize);
                 Test(testSample.Item1, testSample.Item3, this._testAccWindow);
 
                 Console.WriteLine("Loss: {0} Train accuracy: {1}% Test accuracy: {2}%", this._trainer.Loss,

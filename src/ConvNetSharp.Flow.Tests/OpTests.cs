@@ -48,10 +48,7 @@ namespace ConvNetSharp.Flow.Tests
             netFlow.AddLayer(fullyConnLayerFlow);
             netFlow.AddLayer(new SoftmaxLayer<T>());
 
-            var trainerFlow = new SgdTrainer<T>(netFlow, (T)Convert.ChangeType(0.01f, typeof(T)))
-            {
-                BatchSize = batchSize
-            };
+            var trainerFlow = new SgdTrainer<T>(netFlow, (T)Convert.ChangeType(0.01f, typeof(T)));
 
             #endregion
 
@@ -69,8 +66,7 @@ namespace ConvNetSharp.Flow.Tests
 
             var trainerCore = new Core.Training.SgdTrainer<T>(netCore)
             {
-                LearningRate = (T)Convert.ChangeType(0.01f, typeof(T)),
-                BatchSize = batchSize
+                LearningRate = (T)Convert.ChangeType(0.01f, typeof(T))
             };
 
             #endregion

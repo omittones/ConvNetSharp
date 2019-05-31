@@ -44,17 +44,18 @@ namespace FluentMnistDemo
             this._trainer = new SgdTrainer<double>(this._net)
             {
                 LearningRate = 0.01,
-                BatchSize = 20,
                 Momentum = 0.9
             };
 
             Console.WriteLine("Convolutional neural network learning...[Press any key to stop]");
             do
             {
-                var trainSample = datasets.Train.NextBatch(this._trainer.BatchSize);
+                const int batchSize = 20;
+
+                var trainSample = datasets.Train.NextBatch(batchSize);
                 Train(trainSample.Item1, trainSample.Item2, trainSample.Item3);
 
-                var testSample = datasets.Test.NextBatch(this._trainer.BatchSize);
+                var testSample = datasets.Test.NextBatch(batchSize);
                 Test(testSample.Item1, testSample.Item3, this._testAccWindow);
 
                 Console.WriteLine("Loss: {0} Train accuracy: {1}% Test accuracy: {2}%", this._trainer.Loss,
