@@ -7,13 +7,15 @@ using ManagedCuda;
 using ManagedCuda.BasicTypes;
 using ManagedCuda.CudaBlas;
 using ManagedCuda.CudaDNN;
-using Math = System.Math;
+using BaseType = System.Single;
 
 namespace ConvNetSharp.Volume.GPU.Single
 {
-    public class Volume : Volume<float>
+    public class Volume : Volume<BaseType>
     {
-        private static KernelLoader<float> _kernelLoader;
+        public const cudnnDataType CuDNNType = cudnnDataType.Float;
+
+        private static KernelLoader<BaseType> _kernelLoader;
         private readonly GpuContext _context;
         private readonly VolumeStorage _volumeStorage;
 
@@ -25,7 +27,7 @@ namespace ConvNetSharp.Volume.GPU.Single
             LoadKernels();
         }
 
-        internal Volume(float[] array, Shape shape) : base(new VolumeStorage(array, shape, GpuContext.Default))
+        public Volume(BaseType[] array, Shape shape) : base(new VolumeStorage(array, shape, GpuContext.Default))
         {
             this._context = GpuContext.Default;
             this._volumeStorage = this.Storage as VolumeStorage;
@@ -33,7 +35,7 @@ namespace ConvNetSharp.Volume.GPU.Single
             LoadKernels();
         }
 
-        public Volume(float[] array, Shape shape, GpuContext context) : base(new VolumeStorage(array, shape, context))
+        public Volume(BaseType[] array, Shape shape, GpuContext context) : base(new VolumeStorage(array, shape, context))
         {
             this._context = context;
             this._volumeStorage = this.Storage as VolumeStorage;
@@ -41,7 +43,7 @@ namespace ConvNetSharp.Volume.GPU.Single
             LoadKernels();
         }
 
-        private void Activation(Volume<float> result, cudnnActivationMode mode)
+        private void Activation(Volume<BaseType> result, cudnnActivationMode mode)
         {
             var resultStorage = result.Storage as VolumeStorage;
             if (!(resultStorage != null))
@@ -66,8 +68,8 @@ namespace ConvNetSharp.Volume.GPU.Single
                 var h = result.Shape.Dimensions[1];
                 var w = result.Shape.Dimensions[0];
 
-                srcDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float, n, c, h, w);
-                resultDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float, n, c, h, w);
+                srcDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType, n, c, h, w);
+                resultDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType, n, c, h, w);
                 activationDesc.SetActivationDescriptor(mode, cudnnNanPropagation.NotPropagateNan, 0.0);
 
                 this._context.CudnnContext.ActivationForward(activationDesc,
@@ -76,12 +78,12 @@ namespace ConvNetSharp.Volume.GPU.Single
             }
         }
 
-        public override void Activation(ActivationType type, Volume<float> result)
+        public override void Activation(ActivationType type, Volume<BaseType> result)
         {
             Activation(result, type.ToCudnn());
         }
 
-        private void ActivationGradient(Volume<float> input, Volume<float> outputGradient, Volume<float> inputGradient, cudnnActivationMode mode)
+        private void ActivationGradient(Volume<BaseType> input, Volume<BaseType> outputGradient, Volume<BaseType> inputGradient, cudnnActivationMode mode)
         {
             var inputStorage = input.Storage as VolumeStorage;
             var inputGradientStorage = inputGradient.Storage as VolumeStorage;
@@ -107,10 +109,10 @@ namespace ConvNetSharp.Volume.GPU.Single
                 var h = this.Shape.Dimensions[1];
                 var w = this.Shape.Dimensions[0];
 
-                srcDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float, n, c, h, w);
-                srcDiffDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float, n, c, h, w);
-                destDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float, n, c, h, w);
-                destDiffDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float, n, c, h, w);
+                srcDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType, n, c, h, w);
+                srcDiffDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType, n, c, h, w);
+                destDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType, n, c, h, w);
+                destDiffDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType, n, c, h, w);
 
                 activationDesc.SetActivationDescriptor(mode, cudnnNanPropagation.NotPropagateNan,
                     0.0);
@@ -124,12 +126,12 @@ namespace ConvNetSharp.Volume.GPU.Single
             }
         }
 
-        public override void ActivationGradient(Volume<float> input, Volume<float> outputGradient, ActivationType type, Volume<float> result)
+        public override void ActivationGradient(Volume<BaseType> input, Volume<BaseType> outputGradient, ActivationType type, Volume<BaseType> result)
         {
             ActivationGradient(input, outputGradient, result, type.ToCudnn());
         }
 
-        public override void Add(Volume<float> result)
+        public override void Add(Volume<BaseType> result)
         {
             var inputStorage = this.Storage as VolumeStorage;
             var resultStorage = result.Storage as VolumeStorage;
@@ -170,13 +172,13 @@ namespace ConvNetSharp.Volume.GPU.Single
             using (var otherDesc = new TensorDescriptor())
             using (var resultDesc = new TensorDescriptor())
             {
-                resultDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                resultDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     resultDim3,
                     resultDim2,
                     resultDim1,
                     resultDim0);
 
-                otherDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                otherDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     dim3,
                     dim2,
                     dim1,
@@ -188,7 +190,7 @@ namespace ConvNetSharp.Volume.GPU.Single
             }
         }
 
-        public override void Add(Volume<float> other, Volume<float> result)
+        public override void Add(Volume<BaseType> other, Volume<BaseType> result)
         {
             if (this != result)
             {
@@ -199,7 +201,7 @@ namespace ConvNetSharp.Volume.GPU.Single
             other.Add(result);
         }
 
-        public override void BiasGradient(Volume<float> biasGradient)
+        public override void BiasGradient(Volume<BaseType> biasGradient)
         {
             var outputGradientStorage = this._volumeStorage;
             var biasGradientStorage = biasGradient.Storage as VolumeStorage;
@@ -211,13 +213,13 @@ namespace ConvNetSharp.Volume.GPU.Single
             using (var dOutputDesc = new TensorDescriptor())
             using (var dBiasDesc = new TensorDescriptor())
             {
-                dOutputDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                dOutputDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     this.Shape.Dimensions[3],
                     this.Shape.Dimensions[2],
                     this.Shape.Dimensions[1],
                     this.Shape.Dimensions[0]);
 
-                dBiasDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                dBiasDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     biasGradient.Shape.Dimensions[3],
                     biasGradient.Shape.Dimensions[2],
                     biasGradient.Shape.Dimensions[1],
@@ -229,9 +231,9 @@ namespace ConvNetSharp.Volume.GPU.Single
             }
         }
 
-        public override void Concat(Volume<float> right, Volume<float> result)
+        public override void Concat(Volume<BaseType> right, Volume<BaseType> result)
         {
-            var batchSize = Math.Max(this.Shape.Dimensions[3], right.Shape.Dimensions[3]);
+            var batchSize = System.Math.Max(this.Shape.Dimensions[3], right.Shape.Dimensions[3]);
             var elementPerBatch = result.Shape.TotalLength / batchSize;
 
             // mode 0: none of the inputs are scalars
@@ -243,7 +245,7 @@ namespace ConvNetSharp.Volume.GPU.Single
             _kernelLoader.RunKernel("concat", this, right, result, elementPerBatch, threshold, mode);
         }
 
-        public override void Convolution(Volume<float> filters, int pad, int stride, Volume<float> result)
+        public override void Convolution(Volume<BaseType> filters, int pad, int stride, Volume<BaseType> result)
         {
             var resultStorage = result.Storage as VolumeStorage;
             if (resultStorage == null)
@@ -268,21 +270,21 @@ namespace ConvNetSharp.Volume.GPU.Single
             using (var convolutionDesc = new ConvolutionDescriptor())
             {
                 convolutionDesc.SetConvolution2dDescriptor(pad, pad, stride, stride, 1, 1,
-                    cudnnConvolutionMode.CrossCorrelation, cudnnDataType.Float);
+                    cudnnConvolutionMode.CrossCorrelation, CuDNNType);
 
-                dataDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                dataDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     this.Shape.Dimensions[3],
                     this.Shape.Dimensions[2],
                     this.Shape.Dimensions[1],
                     this.Shape.Dimensions[0]);
 
-                filterDesc.SetFilter4dDescriptor(cudnnDataType.Float, cudnnTensorFormat.NCHW,
+                filterDesc.SetFilter4dDescriptor(CuDNNType, cudnnTensorFormat.NCHW,
                     filters.Shape.Dimensions[3],
                     filters.Shape.Dimensions[2],
                     filters.Shape.Dimensions[1],
                     filters.Shape.Dimensions[0]);
 
-                outputDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                outputDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     result.Shape.Dimensions[3],
                     result.Shape.Dimensions[2],
                     result.Shape.Dimensions[1],
@@ -317,8 +319,8 @@ namespace ConvNetSharp.Volume.GPU.Single
             }
         }
 
-        public override void ConvolutionGradient(Volume<float> filters, Volume<float> outputGradients,
-            Volume<float> filterGradient, int pad, int stride, Volume<float> inputGradient)
+        public override void ConvolutionGradient(Volume<BaseType> filters, Volume<BaseType> outputGradients,
+            Volume<BaseType> filterGradient, int pad, int stride, Volume<BaseType> inputGradient)
         {
             var inputStorage = this._volumeStorage;
             var outputGradientStorage = outputGradients.Storage as VolumeStorage;
@@ -341,33 +343,33 @@ namespace ConvNetSharp.Volume.GPU.Single
             using (var convolutionDesc = new ConvolutionDescriptor())
             {
                 convolutionDesc.SetConvolution2dDescriptor(pad, pad, stride, stride, 1, 1,
-                    cudnnConvolutionMode.CrossCorrelation, cudnnDataType.Float);
+                    cudnnConvolutionMode.CrossCorrelation, CuDNNType);
 
-                dataDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                dataDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     this.Shape.Dimensions[3],
                     this.Shape.Dimensions[2],
                     this.Shape.Dimensions[1],
                     this.Shape.Dimensions[0]);
 
-                dDataDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                dDataDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     this.Shape.Dimensions[3],
                     this.Shape.Dimensions[2],
                     this.Shape.Dimensions[1],
                     this.Shape.Dimensions[0]);
 
-                dOutputDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                dOutputDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     outputGradients.Shape.Dimensions[3],
                     outputGradients.Shape.Dimensions[2],
                     outputGradients.Shape.Dimensions[1],
                     outputGradients.Shape.Dimensions[0]);
 
-                filterDesc.SetFilter4dDescriptor(cudnnDataType.Float, cudnnTensorFormat.NCHW,
+                filterDesc.SetFilter4dDescriptor(CuDNNType, cudnnTensorFormat.NCHW,
                     filters.Shape.Dimensions[3],
                     filters.Shape.Dimensions[2],
                     filters.Shape.Dimensions[1],
                     filters.Shape.Dimensions[0]);
 
-                dfilterDesc.SetFilter4dDescriptor(cudnnDataType.Float, cudnnTensorFormat.NCHW,
+                dfilterDesc.SetFilter4dDescriptor(CuDNNType, cudnnTensorFormat.NCHW,
                     filters.Shape.Dimensions[3],
                     filters.Shape.Dimensions[2],
                     filters.Shape.Dimensions[1],
@@ -413,12 +415,12 @@ namespace ConvNetSharp.Volume.GPU.Single
             }
         }
 
-        public override void Divide(Volume<float> other, Volume<float> result)
+        public override void Divide(Volume<BaseType> other, Volume<BaseType> result)
         {
             _kernelLoader.RunKernel("div", this, other, result, other.Shape.TotalLength == 1 ? 1 : 0);
         }
 
-        public override void Dropout(float dropProbability, Volume<float> result)
+        public override void Dropout(BaseType dropProbability, Volume<BaseType> result)
         {
             var resultStorage = result.Storage as VolumeStorage;
             if (resultStorage == null)
@@ -434,13 +436,13 @@ namespace ConvNetSharp.Volume.GPU.Single
             using (var srcDesc = new TensorDescriptor())
             using (var resultDesc = new TensorDescriptor())
             {
-                srcDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                srcDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     this.Shape.Dimensions[3],
                     this.Shape.Dimensions[2],
                     this.Shape.Dimensions[1],
                     this.Shape.Dimensions[0]);
 
-                resultDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                resultDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     result.Shape.Dimensions[3],
                     result.Shape.Dimensions[2],
                     result.Shape.Dimensions[1],
@@ -469,7 +471,7 @@ namespace ConvNetSharp.Volume.GPU.Single
             }
         }
 
-        public override void DropoutGradient(Volume<float> input, Volume<float> outputGradient, float dropProbability, Volume<float> inputGradient)
+        public override void DropoutGradient(Volume<BaseType> input, Volume<BaseType> outputGradient, BaseType dropProbability, Volume<BaseType> inputGradient)
         {
             var outputStorage = this.Storage as VolumeStorage;
             var inputStorage = input.Storage as VolumeStorage;
@@ -494,13 +496,13 @@ namespace ConvNetSharp.Volume.GPU.Single
 
                 dropoutDesc.SetDropoutDescriptor(dropProbability, outputStorage.DropoutStateStorage, stateSize, 0);
 
-                dDataDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                dDataDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     this.Shape.Dimensions[3],
                     this.Shape.Dimensions[2],
                     this.Shape.Dimensions[1],
                     this.Shape.Dimensions[0]);
 
-                dOutputDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                dOutputDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     outputGradient.Shape.Dimensions[3],
                     outputGradient.Shape.Dimensions[2],
                     outputGradient.Shape.Dimensions[1],
@@ -513,22 +515,22 @@ namespace ConvNetSharp.Volume.GPU.Single
             }
         }
 
-        public override void Exp(Volume<float> result)
+        public override void Exp(Volume<BaseType> result)
         {
             _kernelLoader.RunKernel("exp", this, result);
         }
 
-        public override void Extract(int length, int offset, Volume<float> result)
+        public override void Extract(int length, int offset, Volume<BaseType> result)
         {
             _kernelLoader.RunKernel("extract", this, result, new object[] { length, offset, this.Shape.TotalLength });
         }
 
-        public override void LeakyRelu(float alpha, Volume<float> result)
+        public override void LeakyRelu(BaseType alpha, Volume<BaseType> result)
         {
             _kernelLoader.RunKernel("leakyrelu", this, result, new object[] { alpha });
         }
 
-        public override void LeakyReluGradient(Volume<float> outputGradient, Volume<float> inputGradient, float alpha)
+        public override void LeakyReluGradient(Volume<BaseType> outputGradient, Volume<BaseType> inputGradient, BaseType alpha)
         {
             _kernelLoader.RunKernel("leakyrelu_gradient", this, outputGradient, inputGradient, alpha);
         }
@@ -537,7 +539,7 @@ namespace ConvNetSharp.Volume.GPU.Single
         {
             if (_kernelLoader == null)
             {
-                _kernelLoader = new KernelLoader<float>(this._context);
+                _kernelLoader = new KernelLoader<BaseType>(this._context);
 
                 var assembly = Assembly.GetExecutingAssembly();
 
@@ -555,12 +557,12 @@ namespace ConvNetSharp.Volume.GPU.Single
             }
         }
 
-        public override void Log(Volume<float> result)
+        public override void Log(Volume<BaseType> result)
         {
             _kernelLoader.RunKernel("log", this, result);
         }
 
-        public override void MatMultiply(Volume<float> right, Volume<float> result)
+        public override void MatMultiply(Volume<BaseType> right, Volume<BaseType> result)
         {
             var leftStorage = this.Storage as VolumeStorage;
             var rightStorage = right.Storage as VolumeStorage;
@@ -583,29 +585,29 @@ namespace ConvNetSharp.Volume.GPU.Single
                 this._context.CudaBlasHandle.Gemm(Operation.NonTranspose, Operation.NonTranspose,
                     n, m, k,
                     1.0f,
-                    broadCastRight ? rightStorage.DeviceBuffer : new CudaDeviceVariable<float>(rightStorage.DeviceBuffer.DevicePointer + b * k * n * sizeof(float)), n,
-                    broadCastLeft ? leftStorage.DeviceBuffer : new CudaDeviceVariable<float>(leftStorage.DeviceBuffer.DevicePointer + b * k * m * sizeof(float)), k,
+                    broadCastRight ? rightStorage.DeviceBuffer : new CudaDeviceVariable<BaseType>(rightStorage.DeviceBuffer.DevicePointer + b * k * n * sizeof(BaseType)), n,
+                    broadCastLeft ? leftStorage.DeviceBuffer : new CudaDeviceVariable<BaseType>(leftStorage.DeviceBuffer.DevicePointer + b * k * m * sizeof(BaseType)), k,
                     0.0f,
-                    new CudaDeviceVariable<float>(resultStorage.DeviceBuffer.DevicePointer + b * n * m * sizeof(float)), n);
+                    new CudaDeviceVariable<BaseType>(resultStorage.DeviceBuffer.DevicePointer + b * n * m * sizeof(BaseType)), n);
             }
         }
 
-        public override void Max(Volume<float> result)
+        public override void Max(Volume<BaseType> result)
         {
             Reduce(result, cudnnReduceTensorOp.Max);
         }
 
-        public override void Min(Volume<float> result)
+        public override void Min(Volume<BaseType> result)
         {
             Reduce(result, cudnnReduceTensorOp.Min);
         }
 
-        public override void Multiply(Volume<float> right, Volume<float> result)
+        public override void Multiply(Volume<BaseType> right, Volume<BaseType> result)
         {
             Op(right, cudnnOpTensorOp.OpTensorMul, result);
         }
 
-        public override void Multiply(float factor, Volume<float> result)
+        public override void Multiply(BaseType factor, Volume<BaseType> result)
         {
             var resultStorage = result.Storage as VolumeStorage;
             if (resultStorage == null)
@@ -625,23 +627,23 @@ namespace ConvNetSharp.Volume.GPU.Single
                 var h = result.Shape.Dimensions[1];
                 var w = result.Shape.Dimensions[0];
 
-                resultDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float, n, c, h, w);
+                resultDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType, n, c, h, w);
 
                 this._context.CudnnContext.ScaleTensor(resultDesc, resultStorage.DeviceBuffer, factor);
             }
         }
 
-        public override void Negate(Volume<float> result)
+        public override void Negate(Volume<BaseType> result)
         {
             Multiply(-1.0f, result);
         }
 
-        public override void Norm1(Volume<float> result)
+        public override void Norm1(Volume<BaseType> result)
         {
             Reduce(result, cudnnReduceTensorOp.Norm1);
         }
 
-        private void Op(Volume<float> right, cudnnOpTensorOp op, Volume<float> result)
+        private void Op(Volume<BaseType> right, cudnnOpTensorOp op, Volume<BaseType> result)
         {
             var resultStorage = result.Storage as VolumeStorage;
             if (resultStorage == null)
@@ -689,21 +691,21 @@ namespace ConvNetSharp.Volume.GPU.Single
             using (var descB = new TensorDescriptor())
             using (var descC = new TensorDescriptor())
             {
-                descA.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float, n, c, h, w);
+                descA.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType, n, c, h, w);
                 if (bShape != null)
                 {
-                    descB.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                    descB.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                         bShape.Dimensions[3],
                         bShape.Dimensions[2],
                         bShape.Dimensions[1],
                         bShape.Dimensions[0]);
                 }
 
-                descC.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float, n, c, h, w);
+                descC.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType, n, c, h, w);
 
                 using (var opt = new OpTensorDescriptor(this._context.CudnnContext))
                 {
-                    opt.SetOpTensorDescriptor(op, cudnnDataType.Float, cudnnNanPropagation.PropagateNan);
+                    opt.SetOpTensorDescriptor(op, CuDNNType, cudnnNanPropagation.PropagateNan);
 
                     var one = 1.0f;
                     var zero = 0.0f;
@@ -726,7 +728,7 @@ namespace ConvNetSharp.Volume.GPU.Single
         }
 
         public override void Pool(int windowWidth, int windowHeight,
-            int horizontalPad, int verticalPad, int horizontalStride, int verticalStride, Volume<float> result)
+            int horizontalPad, int verticalPad, int horizontalStride, int verticalStride, Volume<BaseType> result)
         {
             var resultStorage = result.Storage as VolumeStorage;
             if (resultStorage == null)
@@ -746,13 +748,13 @@ namespace ConvNetSharp.Volume.GPU.Single
             using (var srcDesc = new TensorDescriptor())
             using (var resultDesc = new TensorDescriptor())
             {
-                srcDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                srcDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     this.Shape.Dimensions[3],
                     this.Shape.Dimensions[2],
                     this.Shape.Dimensions[1],
                     this.Shape.Dimensions[0]);
 
-                resultDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                resultDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     result.Shape.Dimensions[3],
                     result.Shape.Dimensions[2],
                     result.Shape.Dimensions[1],
@@ -767,10 +769,10 @@ namespace ConvNetSharp.Volume.GPU.Single
             }
         }
 
-        public override void PoolGradient(Volume<float> input, Volume<float> outputGradient,
+        public override void PoolGradient(Volume<BaseType> input, Volume<BaseType> outputGradient,
             int windowWidth, int windowHeight,
             int horizontalPad, int verticalPad, int horizontalStride, int verticalStride,
-            Volume<float> inputGradient)
+            Volume<BaseType> inputGradient)
         {
             var inputStorage = input.Storage as VolumeStorage;
             var inputGradientStorage = inputGradient.Storage as VolumeStorage;
@@ -797,15 +799,15 @@ namespace ConvNetSharp.Volume.GPU.Single
                 var h = this.Shape.Dimensions[1];
                 var w = this.Shape.Dimensions[0];
 
-                srcDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float, n, c, h, w);
-                srcDiffDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float, n, c, h, w);
+                srcDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType, n, c, h, w);
+                srcDiffDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType, n, c, h, w);
 
-                destDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                destDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     inputStorage.Shape.Dimensions[3],
                     inputStorage.Shape.Dimensions[2],
                     inputStorage.Shape.Dimensions[1],
                     inputStorage.Shape.Dimensions[0]);
-                destDiffDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                destDiffDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     inputStorage.Shape.Dimensions[3],
                     inputStorage.Shape.Dimensions[2],
                     inputStorage.Shape.Dimensions[1],
@@ -824,7 +826,7 @@ namespace ConvNetSharp.Volume.GPU.Single
             }
         }
 
-        public override void Power(Volume<float> power, Volume<float> result)
+        public override void Power(Volume<BaseType> power, Volume<BaseType> result)
         {
             if (!Equals(this.Shape, power.Shape) && power.Shape.TotalLength > 1)
             {
@@ -839,12 +841,12 @@ namespace ConvNetSharp.Volume.GPU.Single
             _kernelLoader.RunKernel("power", this, power, result, power.Shape.TotalLength == 1 ? 1 : 0);
         }
 
-        public override void Reduce(TensorReduceOp op, Volume<float> result)
+        public override void Reduce(TensorReduceOp op, Volume<BaseType> result)
         {
             Reduce(result, op.ToCudnn());
         }
 
-        private void Reduce(Volume<float> result, cudnnReduceTensorOp op)
+        private void Reduce(Volume<BaseType> result, cudnnReduceTensorOp op)
         {
             if (this.Shape.Equals(result.Shape))
             {
@@ -873,10 +875,10 @@ namespace ConvNetSharp.Volume.GPU.Single
                 var ch = result.Shape.Dimensions[1];
                 var cw = result.Shape.Dimensions[0];
 
-                aDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float, an, ac, ah, aw);
-                cDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float, cn, cc, ch, cw);
+                aDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType, an, ac, ah, aw);
+                cDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType, cn, cc, ch, cw);
 
-                reduceTensorDesc.SetReduceTensorDescriptor(op, cudnnDataType.Float, cudnnNanPropagation.NotPropagateNan, cudnnReduceTensorIndices.NoIndices,
+                reduceTensorDesc.SetReduceTensorDescriptor(op, CuDNNType, cudnnNanPropagation.NotPropagateNan, cudnnReduceTensorIndices.NoIndices,
                     cudnnIndicesType.Indices32Bit);
 
                 var workspaceSize = this._context.CudnnContext.GetReductionWorkspaceSize(reduceTensorDesc, aDesc, cDesc);
@@ -897,29 +899,29 @@ namespace ConvNetSharp.Volume.GPU.Single
             }
         }
 
-        public override void Relu(Volume<float> result)
+        public override void Relu(Volume<BaseType> result)
         {
             Activation(result, cudnnActivationMode.Relu);
         }
 
-        public override void ReluGradient(Volume<float> input, Volume<float> outputGradient,
-            Volume<float> inputGradient)
+        public override void ReluGradient(Volume<BaseType> input, Volume<BaseType> outputGradient,
+            Volume<BaseType> inputGradient)
         {
             ActivationGradient(input, outputGradient, inputGradient, cudnnActivationMode.Relu);
         }
 
-        public override void Sigmoid(Volume<float> result)
+        public override void Sigmoid(Volume<BaseType> result)
         {
             Activation(result, cudnnActivationMode.Sigmoid);
         }
 
-        public override void SigmoidGradient(Volume<float> input, Volume<float> outputGradient,
-            Volume<float> inputGradient)
+        public override void SigmoidGradient(Volume<BaseType> input, Volume<BaseType> outputGradient,
+            Volume<BaseType> inputGradient)
         {
             ActivationGradient(input, outputGradient, inputGradient, cudnnActivationMode.Sigmoid);
         }
 
-        public override void Softmax(Volume<float> output)
+        public override void Softmax(Volume<BaseType> output)
         {
             var inputStorage = this._volumeStorage;
             var outputStorage = output.Storage as VolumeStorage;
@@ -936,8 +938,8 @@ namespace ConvNetSharp.Volume.GPU.Single
                 var h = this.Shape.Dimensions[1];
                 var w = this.Shape.Dimensions[0];
 
-                srcDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float, n, c, h, w);
-                destDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float, n, c, h, w);
+                srcDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType, n, c, h, w);
+                destDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType, n, c, h, w);
 
                 this._context.CudnnContext.SoftmaxForward(cudnnSoftmaxAlgorithm.Accurate, cudnnSoftmaxMode.Channel, 1.0f,
                     srcDesc, inputStorage.DeviceBuffer, 0.0f,
@@ -945,7 +947,7 @@ namespace ConvNetSharp.Volume.GPU.Single
             }
         }
 
-        public override void SoftmaxGradient(Volume<float> outputGradient, Volume<float> inputGradient)
+        public override void SoftmaxGradient(Volume<BaseType> outputGradient, Volume<BaseType> inputGradient)
         {
             var inputGradientStorage = inputGradient.Storage as VolumeStorage;
             var outputGradientStorage = outputGradient.Storage as VolumeStorage;
@@ -968,9 +970,9 @@ namespace ConvNetSharp.Volume.GPU.Single
                 var h = this.Shape.Dimensions[1];
                 var w = this.Shape.Dimensions[0];
 
-                srcDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float, n, c, h, w);
-                srcDiffDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float, n, c, h, w);
-                destDiffDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float, n, c, h, w);
+                srcDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType, n, c, h, w);
+                srcDiffDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType, n, c, h, w);
+                destDiffDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType, n, c, h, w);
 
                 this._context.CudnnContext.SoftmaxBackward(cudnnSoftmaxAlgorithm.Accurate, cudnnSoftmaxMode.Channel, 1.0f,
                     srcDesc, outputStorage.DeviceBuffer,
@@ -980,12 +982,12 @@ namespace ConvNetSharp.Volume.GPU.Single
             }
         }
 
-        public override void Sqrt(Volume<float> result)
+        public override void Sqrt(Volume<BaseType> result)
         {
             Op(null, cudnnOpTensorOp.OpTensorSqrt, result);
         }
 
-        public override void SubtractFrom(Volume<float> other, Volume<float> result)
+        public override void SubtractFrom(Volume<BaseType> other, Volume<BaseType> result)
         {
             var otherStorage = other.Storage as VolumeStorage;
             var resultStorage = result.Storage as VolumeStorage;
@@ -1007,13 +1009,13 @@ namespace ConvNetSharp.Volume.GPU.Single
             using (var subtractorDesc = new TensorDescriptor())
             using (var resultDesc = new TensorDescriptor())
             {
-                subtractorDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                subtractorDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     other.Shape.Dimensions[3],
                     other.Shape.Dimensions[2],
                     other.Shape.Dimensions[1],
                     other.Shape.Dimensions[0]);
 
-                resultDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, cudnnDataType.Float,
+                resultDesc.SetTensor4dDescriptor(cudnnTensorFormat.NCHW, CuDNNType,
                     this.Shape.Dimensions[3],
                     this.Shape.Dimensions[2],
                     this.Shape.Dimensions[1],
@@ -1025,23 +1027,23 @@ namespace ConvNetSharp.Volume.GPU.Single
             }
         }
 
-        public override void Sum(Volume<float> result)
+        public override void Sum(Volume<BaseType> result)
         {
             Reduce(TensorReduceOp.Add, result);
         }
 
-        public override void Tanh(Volume<float> result)
+        public override void Tanh(Volume<BaseType> result)
         {
             Activation(result, cudnnActivationMode.Tanh);
         }
 
-        public override void TanhGradient(Volume<float> input, Volume<float> outputGradient,
-            Volume<float> inputGradient)
+        public override void TanhGradient(Volume<BaseType> input, Volume<BaseType> outputGradient,
+            Volume<BaseType> inputGradient)
         {
             ActivationGradient(input, outputGradient, inputGradient, cudnnActivationMode.Tanh);
         }
 
-        public override void Tile(Volume<float> reps, Volume<float> result)
+        public override void Tile(Volume<BaseType> reps, Volume<BaseType> result)
         {
             _kernelLoader.RunKernel("tile", this, result
                 , new object[]
@@ -1051,7 +1053,7 @@ namespace ConvNetSharp.Volume.GPU.Single
                 });
         }
 
-        public override void Transpose(Volume<float> result)
+        public override void Transpose(Volume<BaseType> result)
         {
             var inputStorage = this.Storage as VolumeStorage;
             var resultStorage = result.Storage as VolumeStorage;
@@ -1067,10 +1069,10 @@ namespace ConvNetSharp.Volume.GPU.Single
                     Operation.Transpose,
                     Operation.NonTranspose, m, n,
                     1.0f,
-                    new CudaDeviceVariable<float>(inputStorage.DeviceBuffer.DevicePointer + b * m * n * sizeof(float)), n,
-                    new CudaDeviceVariable<float>(inputStorage.DeviceBuffer.DevicePointer + b * m * n * sizeof(float)), m, // not used because Beta = 0
+                    new CudaDeviceVariable<BaseType>(inputStorage.DeviceBuffer.DevicePointer + b * m * n * sizeof(BaseType)), n,
+                    new CudaDeviceVariable<BaseType>(inputStorage.DeviceBuffer.DevicePointer + b * m * n * sizeof(BaseType)), m, // not used because Beta = 0
                     0.0f,
-                    new CudaDeviceVariable<float>(resultStorage.DeviceBuffer.DevicePointer + b * m * n * sizeof(float)), m);
+                    new CudaDeviceVariable<BaseType>(resultStorage.DeviceBuffer.DevicePointer + b * m * n * sizeof(BaseType)), m);
             }
         }
     }

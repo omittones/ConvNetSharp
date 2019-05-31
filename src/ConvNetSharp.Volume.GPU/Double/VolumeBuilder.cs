@@ -1,4 +1,5 @@
 using System;
+using BaseType = System.Double;
 
 namespace ConvNetSharp.Volume.GPU.Double
 {

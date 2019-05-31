@@ -20,6 +20,8 @@ namespace MnistDemo.GPU
         private void MnistDemo()
         {
             BuilderInstance.Volume = new VolumeBuilder();
+            Ops<float>.SkipValidation = true;
+            Ops<double>.SkipValidation = true;
 
             var datasets = new DataSets();
             if (!datasets.Load(0))

@@ -24,7 +24,7 @@ namespace ConvNetSharp.Volume.GPU
             this.WarpSize = props.WarpSize;
 
             this.DefaultStream = new CudaStream();            
-            this.CudnnContext = new CudaDNNContextEx();
+            this.CudnnContext = new CudaDNNContext();
             this.CublasContext = new CudaBlas(this.DefaultStream.Stream, PointerMode.Device, AtomicsMode.NotAllowed);
         }
 

@@ -1,4 +1,5 @@
 using System;
+using BaseType = System.Single;
 
 namespace ConvNetSharp.Volume.GPU.Single
 {

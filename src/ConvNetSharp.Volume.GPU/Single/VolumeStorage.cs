@@ -3,15 +3,20 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using ManagedCuda;
 using ManagedCuda.BasicTypes;
+using BaseType = System.Single;
 
 namespace ConvNetSharp.Volume.GPU.Single
 {
-    public unsafe class VolumeStorage : VolumeStorage<float>, IDisposable, IVolumeStorage<float>
+    public unsafe class VolumeStorage : VolumeStorage<BaseType>, IDisposable, IVolumeStorage<BaseType>
     {
+        private readonly VolumeStorage _originalStorage;
         private readonly CudaHostMemoryRegion _hostPointer;
-        private readonly bool _isOwner;
         private bool _allocatedOnDevice;
         private bool _disposed;
+        public DataLocation Location { get; set; }
+        public CudaDeviceVariable<BaseType> DeviceBuffer { get; private set; }
+        public BaseType* HostBuffer => (BaseType*)this._hostPointer.Start;
+        public GpuContext Context { get; }
 
         public VolumeStorage(Shape shape, GpuContext context, long length = -1) : base(shape)
         {
@@ -23,13 +28,13 @@ namespace ConvNetSharp.Volume.GPU.Single
                 this.Shape.GuessUnkownDimension(length);
             }
 
-            // Host 
+            // Host
             this._hostPointer = InitializeSharedMemory(this.Shape.TotalLength);
 
-            this._isOwner = true;
+            this._originalStorage = null;
         }
 
-        public VolumeStorage(float[] array, Shape shape, GpuContext context) : this(shape, context, array.Length)
+        public VolumeStorage(BaseType[] array, Shape shape, GpuContext context) : this(shape, context, array.Length)
         {
             this.Context = context;
 
@@ -50,25 +55,21 @@ namespace ConvNetSharp.Volume.GPU.Single
         public VolumeStorage(VolumeStorage storage, Shape newShape) : base(newShape)
         {
             if (storage == null)
-            {
                 throw new ArgumentNullException(nameof(storage));
-            }
 
             if (storage._hostPointer == null)
-            {
                 throw new ArgumentException();
-            }
 
-            this._isOwner = false;
-            this._hostPointer = storage._hostPointer;
             this.Shape = newShape;
             this.Context = storage.Context;
+            this._originalStorage = storage;
+            this._hostPointer = storage._hostPointer;
             this._allocatedOnDevice = storage._allocatedOnDevice;
 
             storage.CopyToDevice();
 
             this.Location = DataLocation.Device;
-            this.DeviceBuffer = new CudaDeviceVariable<float>(storage.DeviceBuffer.DevicePointer);
+            this.DeviceBuffer = new CudaDeviceVariable<BaseType>(storage.DeviceBuffer.DevicePointer);
 
             this.ConvolutionBackwardFilterStorage = storage.ConvolutionBackwardFilterStorage;
             this.ConvolutionBackwardStorage = storage.ConvolutionBackwardStorage;
@@ -88,17 +89,9 @@ namespace ConvNetSharp.Volume.GPU.Single
 
         public CudaDeviceVariable<byte> ReductionStorage { get; set; }
 
-        public DataLocation Location { get; set; }
-
-        public float* HostBuffer => (float*)this._hostPointer.Start;
-
-        public CudaDeviceVariable<float> DeviceBuffer { get; private set; }
-
-        public GpuContext Context { get; }
-
         public CudaDeviceVariable<byte> DropoutStorage { get; set; }
 
-        public CudaDeviceVariable<byte> DropoutStateStorage { get; set; }
+        public CudaDeviceVariable<byte> DropoutStateStorage{ get; set; }
 
         public void Dispose()
         {
@@ -133,30 +126,30 @@ namespace ConvNetSharp.Volume.GPU.Single
             }
         }
 
-        public override void CopyFrom(VolumeStorage<float> source)
+        public override void CopyFrom(VolumeStorage<BaseType> source)
         {
             Debug.Assert(!this._disposed);
 
-            var real = source as VolumeStorage;
+            var src = source as VolumeStorage;
 
-            if (!ReferenceEquals(this, real))
+            if (!ReferenceEquals(this, src))
             {
-                if (this.Shape.TotalLength != real.Shape.TotalLength)
+                if (this.Shape.TotalLength != src.Shape.TotalLength)
                 {
-                    throw new ArgumentException($"origin and destination volume should have the same number of weight ({this.Shape.TotalLength} != {real.Shape}).");
+                    throw new ArgumentException($"origin and destination volume should have the same number of weight ({this.Shape.TotalLength} != {src.Shape}).");
                 }
 
-                real.CopyToDevice();
+                src.CopyToDevice();
 
                 if (this.DeviceBuffer == null)
                 {
-                    this.DeviceBuffer = new CudaDeviceVariable<float>(this.Shape.TotalLength);
+                    this.DeviceBuffer = new CudaDeviceVariable<BaseType>(this.Shape.TotalLength);
                 }
 
                 var res = DriverAPINativeMethods.SynchronousMemcpy_v2.cuMemcpy(
                     this.DeviceBuffer.DevicePointer,
-                    real.DeviceBuffer.DevicePointer,
-                    this.Shape.TotalLength * sizeof(float));
+                    src.DeviceBuffer.DevicePointer,
+                    this.Shape.TotalLength * sizeof(BaseType));
 
                 if (res != CUResult.Success)
                 {
@@ -177,12 +170,10 @@ namespace ConvNetSharp.Volume.GPU.Single
 
             if (this.Location == DataLocation.Host)
             {
-                Debug.WriteLine("CopyToDevice");
-
-                // Device 
+                // Device
                 if (!this._allocatedOnDevice)
                 {
-                    this.DeviceBuffer = new CudaDeviceVariable<float>(this.Shape.TotalLength);
+                    this.DeviceBuffer = new CudaDeviceVariable<BaseType>(this.Shape.TotalLength);
                     this._allocatedOnDevice = true;
                 }
 
@@ -199,6 +190,11 @@ namespace ConvNetSharp.Volume.GPU.Single
                 this.Context.DefaultStream.Synchronize();
 
                 this.Location = DataLocation.Device;
+            }
+
+            if (_originalStorage != null)
+            {
+                _originalStorage.Location = this.Location;
             }
         }
 
@@ -222,6 +218,11 @@ namespace ConvNetSharp.Volume.GPU.Single
 
                 this.Location = DataLocation.Host;
             }
+
+            if (_originalStorage != null)
+            {
+                _originalStorage.Location = this.Location;
+            }
         }
 
         protected virtual void Dispose(bool disposing)
@@ -233,28 +234,22 @@ namespace ConvNetSharp.Volume.GPU.Single
                 GC.SuppressFinalize(this);
             }
 
-            if (this._hostPointer != null && this.HostBuffer != default(float*))
+            if (this._hostPointer != null && this.HostBuffer != default(BaseType*))
             {
-                if (this._isOwner)
+                if (this._originalStorage == null)
                 {
                     this._hostPointer.Dispose();
                 }
             }
 
-            if (this._isOwner)
-            {
-                this.DeviceBuffer?.Dispose();
-                this.ConvolutionBackwardFilterStorage?.Dispose();
-                this.ConvolutionBackwardStorage?.Dispose();
-                this.ConvolutionStorage?.Dispose();
-                this.ReductionStorage?.Dispose();
-                this.DropoutStorage?.Dispose();
-                this.DropoutStateStorage?.Dispose();
-            }
-            else
-            {
-                this.DeviceBuffer = null;
-            }
+            this.DeviceBuffer?.Dispose();
+
+            this.ConvolutionBackwardFilterStorage?.Dispose();
+            this.ConvolutionBackwardStorage?.Dispose();
+            this.ConvolutionStorage?.Dispose();
+            this.ReductionStorage?.Dispose();
+            this.DropoutStorage?.Dispose();
+            this.DropoutStateStorage?.Dispose();
         }
 
         private static void FillWithZeroes(IntPtr memoryStart, long size)
@@ -281,24 +276,22 @@ namespace ConvNetSharp.Volume.GPU.Single
             Dispose(false);
         }
 
-        public override float Get(int[] coordinates)
+        public override BaseType Get(int[] coordinates)
         {
             CopyToHost();
-
             var length = coordinates.Length;
             return Get(coordinates[0], length > 1 ? coordinates[1] : 0, length > 2 ? coordinates[2] : 0, length > 3 ? coordinates[3] : 0);
         }
 
-        public override float Get(int w, int h, int c, int n)
+        public override BaseType Get(int w, int h, int c, int n)
         {
             CopyToHost();
-
             return this.HostBuffer[
                 w + h * this.Shape.Dimensions[0] + c * this.Shape.Dimensions[0] * this.Shape.Dimensions[1] +
                 n * this.Shape.Dimensions[0] * this.Shape.Dimensions[1] * this.Shape.Dimensions[2]];
         }
 
-        public override float Get(int w, int h, int c)
+        public override BaseType Get(int w, int h, int c)
         {
             CopyToHost();
             return
@@ -306,13 +299,13 @@ namespace ConvNetSharp.Volume.GPU.Single
                     w + h * this.Shape.Dimensions[0] + c * this.Shape.Dimensions[0] * this.Shape.Dimensions[1]];
         }
 
-        public override float Get(int w, int h)
+        public override BaseType Get(int w, int h)
         {
             CopyToHost();
             return this.HostBuffer[w + h * this.Shape.Dimensions[0]];
         }
 
-        public override float Get(int i)
+        public override BaseType Get(int i)
         {
             CopyToHost();
             return this.HostBuffer[i];
@@ -320,22 +313,21 @@ namespace ConvNetSharp.Volume.GPU.Single
 
         private static CudaHostMemoryRegion InitializeSharedMemory(long elementCount)
         {
-            var sharedMemory = new CudaHostMemoryRegion(elementCount * sizeof(float));
+            var sharedMemory = new CudaHostMemoryRegion(elementCount * sizeof(BaseType));
 
             // Zero out
             FillWithZeroes(sharedMemory.Start, sharedMemory.ByteCount);
             return sharedMemory;
         }
 
-        public override void Set(int[] coordinates, float value)
+        public override void Set(int[] coordinates, BaseType value)
         {
             CopyToHost();
-
             var length = coordinates.Length;
             Set(coordinates[0], length > 1 ? coordinates[1] : 0, length > 2 ? coordinates[2] : 0, length > 3 ? coordinates[3] : 0, value);
         }
 
-        public override void Set(int w, int h, int c, int n, float value)
+        public override void Set(int w, int h, int c, int n, BaseType value)
         {
             CopyToHost();
             this.HostBuffer[
@@ -343,7 +335,7 @@ namespace ConvNetSharp.Volume.GPU.Single
                 n * this.Shape.Dimensions[0] * this.Shape.Dimensions[1] * this.Shape.Dimensions[2]] = value;
         }
 
-        public override void Set(int w, int h, int c, float value)
+        public override void Set(int w, int h, int c, BaseType value)
         {
             CopyToHost();
             this.HostBuffer[
@@ -351,23 +343,28 @@ namespace ConvNetSharp.Volume.GPU.Single
                 value;
         }
 
-        public override void Set(int w, int h, float value)
+        public override void Set(int w, int h, BaseType value)
         {
             CopyToHost();
             this.HostBuffer[w + h * this.Shape.Dimensions[0]] = value;
         }
 
-        public override void Set(int i, float value)
+        public override void Set(int i, BaseType value)
         {
             CopyToHost();
             this.HostBuffer[i] = value;
         }
 
-        public override float[] ToArray()
+        public override void Set(BaseType[] values)
         {
             CopyToHost();
+            Marshal.Copy(values, 0, new IntPtr(this.HostBuffer), (int)this.Shape.TotalLength);
+        }
 
-            var array = new float[this.Shape.TotalLength];
+        public override BaseType[] ToArray()
+        {
+            CopyToHost();
+            var array = new BaseType[this.Shape.TotalLength];
             Marshal.Copy(new IntPtr(this.HostBuffer), array, 0, (int)this.Shape.TotalLength);
             return array;
         }
