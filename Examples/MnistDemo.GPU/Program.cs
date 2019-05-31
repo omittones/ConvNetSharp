@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using ConvNetSharp.Core;
 using ConvNetSharp.Core.Layers.Single;
 using ConvNetSharp.Core.Training.Single;
@@ -66,10 +67,12 @@ namespace MnistDemo.GPU
             Batch sample = null;
             int currentSamples = 0;
             int epoch = 0;
+            var losses = new CircularBuffer<double>(100);
             do
             {
-                sample = datasets.Train.NextBatch(500, sample);
-                var loss = Train(sample);
+                sample = datasets.Train.NextBatch(100, sample);
+                losses.Add(Train(sample));
+                var loss = losses.Items.Sum() / losses.Count;
 
                 currentSamples += sample.Item3.Length;
 
