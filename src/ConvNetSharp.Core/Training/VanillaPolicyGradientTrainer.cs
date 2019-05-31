@@ -1,7 +1,4 @@
-﻿using ConvNetSharp.Volume;
-using System.Linq;
-using System.Diagnostics;
-using ConvNetSharp.Core.Layers;
+﻿using System.Linq;
 using System;
 
 namespace ConvNetSharp.Core.Training

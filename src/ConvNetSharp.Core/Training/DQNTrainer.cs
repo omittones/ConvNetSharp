@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace ConvNetSharp.Core.Training
 {
-    public class DQNTrainer : SgdTrainer<double>
+    public class DQNTrainer : AdamTrainer<double>
     {
         private INet<double> trainee;
         private INet<double> freezed;

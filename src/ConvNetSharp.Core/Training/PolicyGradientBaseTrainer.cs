@@ -6,7 +6,7 @@ using System;
 
 namespace ConvNetSharp.Core.Training
 {
-    public abstract class PolicyGradientBaseTrainer : SgdTrainer<double>
+    public abstract class PolicyGradientBaseTrainer : AdamTrainer<double>
     {
         public double EstimatedRewards { get; protected set; }
 
