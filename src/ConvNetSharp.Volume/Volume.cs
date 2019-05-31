@@ -25,6 +25,11 @@ namespace ConvNetSharp.Volume
 
         public Shape Shape => this.Storage.Shape;
 
+        public int BatchSize => this.Shape.Dimensions[0];
+        public int Width => this.Shape.Dimensions[this.Shape.Dimensions.Length - 3];
+        public int Height => this.Shape.Dimensions[this.Shape.Dimensions.Length - 2];
+        public int Depth => this.Shape.Dimensions[this.Shape.Dimensions.Length - 1];
+
         public virtual void Dispose()
         {
             if (this.Storage is IDisposable disposable)

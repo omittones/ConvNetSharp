@@ -55,15 +55,15 @@ namespace ConvNetSharp.Performance.Tests
         {
             var net = new TestNet();
             net.InputShape = new[] { Shape.From(input) };
-            net.OutputShape = Shape.From(1, 1, output);
+            net.OutputShape = Shape.From(output);
             net.AddLayer(new InputLayer(input.Dimensions[0], input.Dimensions[1], input.Dimensions[2]));
-            for (var i = 0; i < nmLayers; i++)
+            for (var i = 0; i < layerSizes.Length; i++)
             {
                 net.AddLayer(new FullyConnLayer(layerSizes[i]));
                 net.AddLayer(new ReluLayer());
             }
             net.AddLayer(new FullyConnLayer((int)output.TotalLength));
-            net.AddLayer(new SoftmaxLayer());
+            net.AddLayer(new SoftmaxLayer((int)output.TotalLength));
             return net;
         }
 
@@ -81,8 +81,6 @@ namespace ConvNetSharp.Performance.Tests
             var trainer = new SgdTrainer(net);
             trainer.LearningRate = 0.01;
             trainer.Momentum = 0.5;
-            trainer.L1Decay = 0.01;
-            trainer.L2Decay = 0.01;
 
             for (var i = 0; i < iterations; i++)
             {

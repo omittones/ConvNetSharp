@@ -42,7 +42,7 @@ namespace ConvNetSharp.Core.Layers
 
         public void MuPolicy(Vol input, Vol output)
         {
-            input.DoMax(this.maxes);
+            input.Max(this.maxes);
             for (var bs = 0; bs < input.BatchSize; bs++)
             {
                 double expSum = 0;
@@ -63,7 +63,7 @@ namespace ConvNetSharp.Core.Layers
 
         public void LogMuPolicy(Vol input, Vol output)
         {
-            input.DoMax(this.maxes);
+            input.Max(this.maxes);
             for (var bs = 0; bs < input.BatchSize; bs++)
             {
                 var max = maxes.Get(0, 0, 0, bs);
@@ -203,7 +203,7 @@ namespace ConvNetSharp.Core.Layers
 
             PolicyGradient(this.InputActivation, this.OutputActivation, this.pathActions, this.advantage, this.InputActivationGradients);
 
-            this.InputActivationGradients.DoNegate(this.InputActivationGradients);
+            this.InputActivationGradients.Negate(this.InputActivationGradients);
 
             Ops<double>.Validate(this.InputActivationGradients);
         }

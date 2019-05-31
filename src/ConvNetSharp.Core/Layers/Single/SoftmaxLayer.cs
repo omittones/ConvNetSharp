@@ -4,7 +4,7 @@ namespace ConvNetSharp.Core.Layers.Single
 {
     public class SoftmaxLayer : SoftmaxLayer<float>
     {
-        public SoftmaxLayer()
+        public SoftmaxLayer(int nmClasses) : base(nmClasses)
         {
         }
 

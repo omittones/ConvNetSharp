@@ -1,4 +1,5 @@
 ﻿using ConvNetSharp.Core.Serialization;
+using ConvNetSharp.Volume;
 using System.Linq;
 
 namespace ConvNetSharp.Core.Training

@@ -22,6 +22,11 @@ namespace ConvNetSharp.Core.Layers
             this.OutputHeight = Convert.ToInt32(data["OutputHeight"]);
         }
 
+        public virtual LayerBase<T> Clone()
+        {
+            throw new NotImplementedException();
+        }
+
         public Volume<T> InputActivation { get; protected set; }
 
         public Volume<T> InputActivationGradients { get; protected set; }

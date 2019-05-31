@@ -8,7 +8,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>ConvNetSharp.Core.Tests</RootNamespace>
     <AssemblyName>ConvNetSharp.Core.Tests</AssemblyName>
-    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -48,7 +48,6 @@
     <Compile Include="DropoutLayerTests.cs" />
     <Compile Include="FullyConnLayerTests.cs" />
     <Compile Include="GradientCheckTools.cs" />
-    <Compile Include="IntegrationTests.cs" />
     <Compile Include="PoolLayerTests.cs" />
     <Compile Include="LeakyReluLayerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

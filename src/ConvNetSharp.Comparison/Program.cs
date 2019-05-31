@@ -47,8 +47,6 @@ namespace ConvNetSharp.Comparison
             var bTrainer = new B.Training.SgdTrainer<double>(bNet)
             {
                 BatchSize = BATCH_SIZE,
-                L1Decay = 0,
-                L2Decay = 0,
                 LearningRate = LEARN_RATE,
                 Momentum = MOMENTUM
             };
@@ -152,7 +150,7 @@ namespace ConvNetSharp.Comparison
                 net.AddLayer(new B.Layers.ReluLayer<double>());
             }
             net.AddLayer(new B.Layers.FullyConnLayer<double>(nmOutputs));
-            net.AddLayer(new B.Layers.SoftmaxLayer<double>());
+            net.AddLayer(new B.Layers.SoftmaxLayer<double>(nmOutputs));
             return net;
         }
     }

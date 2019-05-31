@@ -149,5 +149,15 @@ namespace ConvNetSharp.Core.Fluent
 
             return dico;
         }
+
+        public INet<T> Clone()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void CopyParameters(INet<T> to)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

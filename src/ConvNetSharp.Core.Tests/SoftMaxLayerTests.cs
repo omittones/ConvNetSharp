@@ -15,7 +15,7 @@ namespace ConvNetSharp.Core.Tests
 
         public SoftmaxLayerTests()
         {
-            this.layer = new SoftmaxLayer();
+            this.layer = new SoftmaxLayer(4);
             this.layer.Init(1, 1, 4);
 
             this.input = Volume.From(new[]
@@ -65,7 +65,7 @@ namespace ConvNetSharp.Core.Tests
         public void GradientWrtInputCheck()
         {
             // Create layer
-            var softmax = new SoftmaxLayer();
+            var softmax = new SoftmaxLayer(100);
             softmax.Init(10, 10, 10);
             GradientCheckTools.GradientCheck(layer, 10, 10, 10, 3, 1e-6);
         }

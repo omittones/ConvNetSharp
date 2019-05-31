@@ -5,7 +5,7 @@ namespace ConvNetSharp.Volume
 {
     public static class ArrayExtensions
     {
-        public static string ToString<T>(this T[] arr, string format)
+        public static string ToHumanString<T>(this T[] arr, string format)
             where T : IFormattable
         {
             var sb = new StringBuilder();
@@ -31,9 +31,9 @@ namespace ConvNetSharp.Volume
         public static Volume<T> Max<T>(this Volume<T> source)
             where T : struct, IEquatable<T>, IFormattable
         {
-            var n = source.Shape.GetDimension(3);
+            var n = source.Shape.Dimensions[3];
             var result = BuilderInstance<T>.Volume.SameAs(Shape.From(1, 1, 1, n));
-            source.DoMax(result);
+            source.Max(result);
             return result;
         }
     }

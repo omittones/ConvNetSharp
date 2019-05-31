@@ -49,7 +49,7 @@ namespace ConvNetSharp.Core.Training
             return prediction;
         }
 
-        public override void Train(Volume<double> x, Volume<double> y)
+        public override Volume<double> Train(Volume<double> x, Volume<double> y)
         {
             throw new NotSupportedException("Use Reinforce method instead!");
         }

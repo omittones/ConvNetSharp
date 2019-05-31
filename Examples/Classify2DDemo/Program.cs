@@ -19,7 +19,7 @@ namespace Classify2DDemo
             net.AddLayer(new FullyConnLayer(2));
             net.AddLayer(new TanhLayer());
             net.AddLayer(new FullyConnLayer(2));
-            net.AddLayer(new SoftmaxLayer());
+            net.AddLayer(new SoftmaxLayer(2));
 
             // Data
             var data = new List<double[]>();

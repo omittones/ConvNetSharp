@@ -24,7 +24,7 @@ namespace ConvNetSharp.Flow.Training
             throw new NotImplementedException();
         }
 
-        public override void Train(Volume<T> x, Volume<T> y)
+        public override Volume<T> Train(Volume<T> x, Volume<T> y)
         {
             var batchSize = x.Shape.Dimensions[3];
 
@@ -38,6 +38,8 @@ namespace ConvNetSharp.Flow.Training
             chrono = Stopwatch.StartNew();
             this._net.Session.Run(this.Optimizer, this._dico);
             this.BackwardTimeMs= chrono.Elapsed.TotalMilliseconds / batchSize;
+
+            return null;
         }
     }
 }

@@ -19,10 +19,10 @@ namespace ConvNetSharp.Volume
            Volume<double> result)
         {
             int count = 0;
-            var reshapedResult = result.ReShape(1, 1, -1, result.Shape.GetDimension(3));
+            var reshapedResult = result.ReShape(1, 1, -1, result.Shape.Dimensions[3]);
             foreach (var volume in volumes)
             {
-                if (count >= result.Shape.GetDimension(3))
+                if (count >= result.Shape.Dimensions[3])
                     throw new NotSupportedException();
 
                 var reshapedVolume = volume.ReShape(1, 1, -1, 1);

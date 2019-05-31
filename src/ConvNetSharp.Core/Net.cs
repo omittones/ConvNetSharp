@@ -28,15 +28,13 @@ namespace ConvNetSharp.Core
             {
                 CopyVolume(source[i].Volume, destination[i].Volume);
                 CopyVolume(source[i].Gradient, destination[i].Gradient);
-                destination[i].L1DecayMul = source[i].L1DecayMul;
-                destination[i].L2DecayMul = source[i].L2DecayMul;
             }
         }
 
         private void CopyVolume(Volume<T> from, Volume<T> to)
         {
             to.Clear();
-            from.DoAdd(to, to);
+            from.Add(to, to);
         }
 
         public Volume<T> Forward(Volume<T> input, bool isTraining = false)
